@@ -1,5 +1,5 @@
-#ifndef PUSH_BUTTON_H
-#define PUSH_BUTTON_H
+#ifndef DWARFMASTER_PUSH_BUTTON_H
+#define DWARFMASTER_PUSH_BUTTON_H
 
 #include <Arduino.h>
 
@@ -11,7 +11,7 @@ class PushButton {
   private:
     //void init();
     void update();
-    
+
     byte pin;
     byte state;
     byte lastReading;

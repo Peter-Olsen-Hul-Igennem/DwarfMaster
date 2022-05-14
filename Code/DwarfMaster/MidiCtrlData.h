@@ -1,5 +1,5 @@
-#ifndef MIDI_CTRL_DATA_H
-#define MIDI_CTRL_DATA_H
+#ifndef DWARFMASTER_MIDI_CTRL_DATA_H
+#define DWARFMASTER_MIDI_CTRL_DATA_H
 
 #include <Arduino.h>
 #include <ArduinoJson.h>

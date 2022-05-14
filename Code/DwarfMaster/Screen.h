@@ -1,11 +1,11 @@
 #ifndef DWARFMASTER_SCREEN_H
-#define DWARFMASTER_H
+#define DWARFMASTER_SCREEN_H
 
 #include <Arduino.h>
-#include <Adafruit_GFX.h>
 #include <MCUFRIEND_kbv.h>
 #include <TouchScreen.h>
-
+#include "Touch.h"
+#include "TouchKeyboard.h"
 
 
 class Screen
@@ -15,8 +15,13 @@ class Screen
     void drawBank(const char* bnkNbr, const char* bnkName, const bool inverted = false);
     //void drawSelectedPatch(const char* patchName);
     void drawButtonRect(const uint8_t btnNbr, const bool patch, const bool selectedPatch, const bool btnStateFirst, const char* btnLabel);
+
+    String getKeyboardInputFromUser(const String* contextLabel, const String* oldText, const byte maxLength);
     
  	private: 
+    void printButtonLabel(const uint16_t offsetX, const uint16_t offsetY, const char* btnLabel);
+
+    
     const uint16_t LINE_WIDTH            = 5;
     const uint16_t DISPLAY_WIDTH         = 320;
     const uint16_t DISPLAY_HEIGHT        = 240;
@@ -29,12 +34,9 @@ class Screen
     uint16_t offsetYTop = 5;
     uint16_t offsetYBtm = DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT + offsetYTop;
 
-    void printButtonLabel(const uint16_t offsetX, const uint16_t offsetY, const char* btnLabel);
-    
-    
     MCUFRIEND_kbv tft;
-
-
+    Touch touch;
+    TouchKeyboard tKeyb = TouchKeyboard(&tft, &touch);
 };
 
 #endif
