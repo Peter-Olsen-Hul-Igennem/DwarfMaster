@@ -10,14 +10,14 @@
 #define BANK_NAME_LENGTH    10
 #define BUTTON_NAME_LENGTH  10
 
-struct pcMsg
+struct PcMsg
 {
   char channel;
   char valueOn;
   char valueOff;
 };
 
-struct ccMsg
+struct CcMsg
 {
   char channel;
   char ccNumber;
@@ -25,35 +25,31 @@ struct ccMsg
   char valueOff;
 };
 
-struct button
+struct Button
 {
   char name[BUTTON_NAME_LENGTH + 1];
   bool isPatch; // (Patch or Toggle)
   bool isSecondPushEnabled; // (always true if type is Toggle)
   bool isInitialToggleStateOn; // (always false if type is Patch)
-  pcMsg pcMessages[NUMBER_OF_MIDI_MSG];
-  ccMsg ccMessages[NUMBER_OF_MIDI_MSG];
+  PcMsg pcMessages[NUMBER_OF_MIDI_MSG];
+  CcMsg ccMessages[NUMBER_OF_MIDI_MSG];
 };
 
-struct bank
+struct Bank
 {
   char name[BANK_NAME_LENGTH + 1];
-  pcMsg pcMessage;
-  button buttons[NUMBER_OF_BUTTONS];
+  PcMsg pcMessage;
+  Button buttons[NUMBER_OF_BUTTONS];
 
 };
 
-struct ctrlState
-{
-  int bnk;
-  int btn;
-};
+
 
 class MidiCtrlData
 {
   public:
     MidiCtrlData(const char* dataVersion);
-    bank* getBank(int bankNbr);
+    Bank* getBank(const byte bankNbr);
     
   private:
     void initialize();
@@ -65,19 +61,15 @@ class MidiCtrlData
     void saveBankToFile(const char *filename, const DynamicJsonDocument &doc);
     char* buildPath(int id);
     bool verifyVersionFolderExists(); 
-    void loadStateInfo(); // state is persisted to be able to start in the same state as when the controller was powered off.
-    void saveStateInfo();
     
-    bank banks[NUMBER_OF_BANKS];
+    Bank banks[NUMBER_OF_BANKS];
     
     const char* dataVersion;
     const char* prefixVER = "VER_";
     const char* prefixBANK = "BANK_";
     const int arduinoJsonDocSize = 15000;
-    const int stateEepromAddress = 0;
 
     char* folder;
-    ctrlState currentState;
     
 };
 

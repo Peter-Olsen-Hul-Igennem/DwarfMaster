@@ -6,9 +6,21 @@ Screen::Screen()
   tft.begin(0x9341);
   tft.setRotation(1);            //landscape
   tft.fillScreen(TFT_BLACK);
+  
+  tft.setTextColor(TFT_DARKGREY);
+  tft.setTextSize(8);
+  tft.setCursor(45, 50);
+  tft.print("DWARF");
+  tft.setCursor(20, 130);
+  tft.print("MASTER");
 }
 
-void Screen::drawButtonRect(const uint8_t btnNbr, const bool patch, const bool selectedPatch, const bool btnStateFirst, const char* btnLabel)
+void Screen::blankScreen()
+{
+  tft.fillScreen(TFT_BLACK);
+}
+
+void Screen::drawPlayButton(const uint8_t btnNbr, const bool patch, const bool selectedPatch, const bool btnStateFirst, const char* btnLabel)
 {
   uint16_t bgColor = TFT_LIGHTGREY;
   uint16_t txtColor = TFT_BLACK;
@@ -41,30 +53,32 @@ void Screen::drawButtonRect(const uint8_t btnNbr, const bool patch, const bool s
   //tft.setFont(&FreeSans9pt7b);
 
   switch (btnNbr) {
-    case 1:
-      tft.fillRect(0, 0, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-      printButtonLabel(offsetX_1, offsetYTop, btnLabel);
+     case 1:
+      tft.fillRect(0, DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
+      printButtonLabel(BTN_OFFSET_X_1, BTN_OFFSET_Y_BTM, btnLabel);
       break;
     case 2:
-      tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, 0, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-      printButtonLabel(offsetX_2, offsetYTop, btnLabel);
+      tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
+      printButtonLabel(BTN_OFFSET_X_2, BTN_OFFSET_Y_BTM, btnLabel);
       break;
     case 3:
-      tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH + PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, 0, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-      printButtonLabel(offsetX_3, offsetYTop, btnLabel);
-      break;
+      tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH + PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
+      printButtonLabel(BTN_OFFSET_X_3, BTN_OFFSET_Y_BTM, btnLabel);
+      break; 
     case 4:
-      tft.fillRect(0, DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-      printButtonLabel(offsetX_1, offsetYBtm, btnLabel);
+      tft.fillRect(0, 0, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
+      printButtonLabel(BTN_OFFSET_X_1, BTN_OFFSET_Y_TOP, btnLabel);
       break;
     case 5:
-      tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-      printButtonLabel(offsetX_2, offsetYBtm, btnLabel);
+      tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, 0, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
+      printButtonLabel(BTN_OFFSET_X_2, BTN_OFFSET_Y_TOP, btnLabel);
       break;
     case 6:
-      tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH + PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-      printButtonLabel(offsetX_3, offsetYBtm, btnLabel);
-    break; default:
+      tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH + PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, 0, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
+      printButtonLabel(BTN_OFFSET_X_3, BTN_OFFSET_Y_TOP, btnLabel);
+      break;
+
+    default:
       break;
   }
 
@@ -74,7 +88,6 @@ void Screen::printButtonLabel(const uint16_t offsetX, const uint16_t offsetY, co
 {
   size_t maxNbrOfChars = 5;
   size_t labelSize = strlen(btnLabel);
-  Serial.println(labelSize);
   char txt[maxNbrOfChars + 1];
   if (labelSize < maxNbrOfChars + 1) {
     tft.setCursor(offsetX, offsetY + 14);
@@ -92,7 +105,7 @@ void Screen::printButtonLabel(const uint16_t offsetX, const uint16_t offsetY, co
 }
 
 
-void Screen::drawBank(const char* bnkNbr, const char* bnkName, const bool inverted)
+void Screen::drawPlayBank(const char* bnkNbr, const char* bnkName, const bool inverted)
 {
   uint16_t bgColor = TFT_BLACK;
   uint16_t txtColor = TFT_WHITE;
@@ -101,15 +114,14 @@ void Screen::drawBank(const char* bnkNbr, const char* bnkName, const bool invert
     bgColor = TFT_WHITE;
     txtColor = TFT_BLACK;
   }
-  tft.fillRect(0, 82, DISPLAY_WIDTH, DISPLAY_HEIGHT - 170, bgColor);
+  tft.fillRect(0, BANK_OFFSET_Y - 10, DISPLAY_WIDTH, DISPLAY_HEIGHT - 160, bgColor);
 
-  int y = 90;
-  tft.setCursor(5, y);
+  tft.setCursor(5, BANK_OFFSET_Y);
   tft.setTextColor(txtColor);
   tft.setTextSize(8);
   tft.print(String(bnkNbr));
 
-  tft.setCursor(PLAY_BTN_LABEL_WIDTH, y + 28);
+  tft.setCursor(PLAY_BTN_LABEL_WIDTH, BANK_OFFSET_Y + 28);
   tft.setTextSize(4);
   tft.print(String(bnkName));
 }
@@ -117,4 +129,15 @@ void Screen::drawBank(const char* bnkNbr, const char* bnkName, const bool invert
 String Screen::getKeyboardInputFromUser(const String* contextLabel, const String* oldText, const byte maxLength)
 {
   return tKeyb.getInputFromUser(contextLabel, oldText, maxLength);
+}
+
+bool Screen::playBankPressed()
+{
+  Point p = touch.getTouchPoint();
+  if (p.pressed)
+  {
+      if (p.y > BANK_OFFSET_Y && p.y < DISPLAY_HEIGHT - BANK_OFFSET_Y)
+        return true;
+  }
+  return false;
 }

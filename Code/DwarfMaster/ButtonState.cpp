@@ -27,9 +27,10 @@ void ButtonState::determineState()
    * 0: No buttons pressed
    * 1: At least one button pressed
    * 2: Only one button pressed
-   * 3: Two buttons pressed
-   * 4: More than two buttons pressed. This is an "invalid" state. Now we wait for a return to state 0 (zero)
-   * 5: A state has been returned (bankUp/bankDown/btnPressed). Now we wait for a return to state 0 (zero)
+   * 3: Two buttons pressed: BankUP
+   * 4: Two buttons pressed: BankDOWN
+   * 5: An "invalid" combiantion of buttons pressed.
+   * 6: A state has been returned (bankUp/bankDown/btnPressed). Now we wait for a return to state 0 (zero)
    */
   byte cnt = 0;
   switch(state) {
@@ -52,7 +53,17 @@ void ButtonState::determineState()
         if (cnt == 1) 
           state = 2;
         else if (cnt == 2)
-          state = 3;
+        { 
+          if (buttons[0]->isPressed() && buttons[1]->isPressed())
+            state = 3;
+          else if (buttons[1]->isPressed() && buttons[2]->isPressed())
+            state = 4;
+          else
+            state = 5;
+        }
+        else
+          state = 5;
+          
 
         if (state > 1)
           lastTime = millis();
@@ -60,11 +71,12 @@ void ButtonState::determineState()
       break;
     
     case 2: 
-    case 3:
+    case 3: 
+    case 4:
       break;
     
-    case 4:
     case 5:
+    case 6:
       for (byte i = 0; i < NUMBER_OF_PUSHBUTTONS; i++)   
       {
         if (buttons[i]->isPressed())
@@ -83,24 +95,26 @@ void ButtonState::determineState()
 
 bool ButtonState::isBankDownState()
 {
-  bool result = false;
   determineState();
-  result = (state == 3 && buttons[0]->isPressed() && buttons[1]->isPressed());
-  if (result)
-    state = 5;
-
-  return result;
+  //bool result = state == 3; //result = (state == 3 && buttons[0]->isPressed() && buttons[1]->isPressed());
+  if (state == 3)
+  {
+    state = 6;
+    return true;
+  }
+  return false;
 }
 
 bool ButtonState::isBankUpState()
 {
-  bool result = false;
   determineState();
-  result = (state == 3 && buttons[1]->isPressed() && buttons[2]->isPressed());
-  if (result)
-    state = 5;
+  if (state == 4)// (state == 3 && buttons[1]->isPressed() && buttons[2]->isPressed());
+  {
+    state = 6;
+    return true;
+  }
 
-  return result;
+  return false;
 }
 
 byte ButtonState::getSingleButtonPressed()
@@ -108,11 +122,11 @@ byte ButtonState::getSingleButtonPressed()
   determineState();
   if (state == 2)
   {
-    state = 5;
+    state = 6;
     return getButtonPressed();
   }
-  else
-    return 0;
+
+  return 0;
 }
 
 byte ButtonState::getButtonPressed()

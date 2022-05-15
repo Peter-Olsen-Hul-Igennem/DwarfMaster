@@ -15,12 +15,7 @@ byte PushButton::getState() {
 bool PushButton::isPressed() {
   return (getState() == LOW);
 }
-/*
-void PushButton::init() {
-  pinMode(pin, INPUT_PULLUP);
-  update();
-}
-*/
+
 void PushButton::update() {
     // You can handle the debounce of the button directly
     // in the class, so you don't have to think about it

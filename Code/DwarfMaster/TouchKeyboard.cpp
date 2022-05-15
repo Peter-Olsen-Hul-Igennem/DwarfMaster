@@ -5,8 +5,6 @@ TouchKeyboard::TouchKeyboard(MCUFRIEND_kbv* tft, Touch* touch)
 {
   this->touch = touch;
   this->tft = tft;
- /* tft->begin(0x9341);
-  tft->setRotation(1);     */       //landscape
 }
 
 
@@ -94,7 +92,7 @@ String TouchKeyboard::getInputFromUser(const String* contextLabel, const String*
 
 void TouchKeyboard::drawKeyboard(const String* contextLabel)
 {
-  tft->fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, TFT_WHITE);
+  tft->fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, BACKGROUND_COLOR);
   
   int x;
   int y;
@@ -103,12 +101,12 @@ void TouchKeyboard::drawKeyboard(const String* contextLabel)
     y = 40 * j;
     for (int i = 0; i < 3; i++)
     {
-      tft->drawLine(0, y + i, DISPLAY_WIDTH, y + i, TFT_BLACK); // Top line
+      tft->drawLine(0, y + i, DISPLAY_WIDTH, y + i, LINE_COLOR); 
     }
     x = 53 * j;
     for (int i = 0; i < 3; i++)
     {
-      tft->drawLine(x + i, 40, x + i, DISPLAY_HEIGHT, TFT_BLACK); // Top line
+      tft->drawLine(x + i, 40, x + i, DISPLAY_HEIGHT, LINE_COLOR);
     }
   }
   
@@ -135,7 +133,7 @@ void TouchKeyboard::drawKeyboardLabels(bool letters)
     for (int i = 0; i < 6; i++)
     {
       x = 10 + (53 * i);
-      tft->fillRect(x, y, 40, 20, TFT_WHITE);
+      tft->fillRect(x, y, 40, 20, BACKGROUND_COLOR);
       
       if (LETTERS[cnt].length() == 1)
         x += 12;
@@ -155,7 +153,7 @@ void TouchKeyboard::drawKeyboardLabels(bool letters)
 
 void TouchKeyboard::drawKeyboardInputText(const String* txt)
 {
-  tft->fillRect(KEYBOARD_INPUT_TXT_X, 0, DISPLAY_WIDTH - KEYBOARD_INPUT_TXT_X, 40, TFT_WHITE);
+  tft->fillRect(KEYBOARD_INPUT_TXT_X, 0, DISPLAY_WIDTH - KEYBOARD_INPUT_TXT_X, 40, BACKGROUND_COLOR);
   tft->setTextColor(TFT_BLACK);
   tft->setTextSize(3);
   tft->setCursor(KEYBOARD_INPUT_TXT_X, KEYBOARD_INPUT_TXT_Y);
@@ -165,7 +163,7 @@ void TouchKeyboard::drawKeyboardInputText(const String* txt)
 void TouchKeyboard::replaceKeyboardInputText(int pos, const String* txt)
 {
   int x = KEYBOARD_INPUT_TXT_X + (KEYBOARD_INPUT_FONT_WIDTH * pos);
-  tft->fillRect(x, 0, KEYBOARD_INPUT_FONT_WIDTH, 33, TFT_WHITE);
+  tft->fillRect(x, 0, KEYBOARD_INPUT_FONT_WIDTH, 33, BACKGROUND_COLOR);
   tft->setTextColor(TFT_BLACK);
   tft->setTextSize(3);
   tft->setCursor(x, KEYBOARD_INPUT_TXT_Y);
@@ -197,7 +195,7 @@ void TouchKeyboard::drawCursor(byte pos)
   const int y = 34;
   const int cursorLength = 14;
 
-  tft->fillRect(KEYBOARD_INPUT_TXT_X, y, DISPLAY_WIDTH - KEYBOARD_INPUT_TXT_X, 3, TFT_WHITE);
+  tft->fillRect(KEYBOARD_INPUT_TXT_X, y, DISPLAY_WIDTH - KEYBOARD_INPUT_TXT_X, 3, BACKGROUND_COLOR);
 
   for (int i = 0; i < 3; i++)
   {

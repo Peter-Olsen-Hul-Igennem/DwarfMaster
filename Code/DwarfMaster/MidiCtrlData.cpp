@@ -7,8 +7,6 @@
 MidiCtrlData::MidiCtrlData(const char* dataVersion)
 {
   this->dataVersion = dataVersion;
-  currentState.bnk = 0;
-  currentState.btn = 0;
   
   folder = strdup(prefixVER);
   strcat(folder, dataVersion);
@@ -17,7 +15,6 @@ MidiCtrlData::MidiCtrlData(const char* dataVersion)
   {
     Serial.println("Version folder OK");
     deserialize();
-    loadStateInfo();
   }
   else
   {
@@ -26,10 +23,8 @@ MidiCtrlData::MidiCtrlData(const char* dataVersion)
   }
 }
 
-bank* MidiCtrlData::getBank(int bankNbr)
+Bank* MidiCtrlData::getBank(byte bankNbr)
 {
-  currentState.bnk = bankNbr;
-  saveStateInfo();
   return &banks[bankNbr];
 }
 
@@ -63,15 +58,10 @@ void MidiCtrlData::initialize()
     }
   }
   serialize();
-
-  currentState.bnk = 0;
-  currentState.btn = 0;
-  saveStateInfo();
 }
 
 void MidiCtrlData::deserialize()
 {
-  //return false;
   for (int i = 0; i < NUMBER_OF_BANKS; i++)
   {
     deserializeBank(i);
@@ -150,7 +140,6 @@ void MidiCtrlData::serializeBank(const int id)
   }
   serializeJsonPretty(doc, Serial);
   Serial.println();
-  //Serial.println(doc.memoryUsage());
 
   saveBankToFile(buildPath(id), doc);
 }
@@ -161,29 +150,19 @@ void MidiCtrlData::loadBankFromFile(const char *path, DynamicJsonDocument &doc) 
   
   if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("SD initialization failed!");
-   // return false;
   }
-  //Serial.println("SD initialization ok");
 
   File file = SD.open(path);
   if (!file) {
     Serial.println(F("Failed to create file"));
     Serial.println(path);
-   // return false;
   }
-  //Serial.println("SD File created");
 
   DeserializationError error = deserializeJson(doc, file);
   if (error)
     Serial.println(F("Failed to read file, using default configuration"));
-/*
-  while (file.available()) {
-    Serial.write(file.read());
-  }*/
-  // close the file:
-  file.close();
 
- // return true;
+  file.close();
 }
 
 void MidiCtrlData::saveBankToFile(const char *path, const DynamicJsonDocument &doc) {
@@ -240,27 +219,3 @@ char* MidiCtrlData::buildPath(int id)
   
   return path;
 }
-
-void MidiCtrlData::loadStateInfo()
-{
-  EEPROM.get(stateEepromAddress, currentState);
-  if (currentState.bnk < 0 || currentState.bnk > NUMBER_OF_BANKS - 1)
-    currentState.bnk = 0;
-  if (currentState.btn < 0 || currentState.btn > NUMBER_OF_BUTTONS - 1)
-    currentState.btn = 0;
-}
-
-void MidiCtrlData::saveStateInfo()
-{
-  EEPROM.put(stateEepromAddress, currentState);
-}
-/*
-char* MidiCtrlData::buildFilename(int id)
-{
-  static char filename[10];
-  strcpy(filename, prefixBANK);
-  itoa(id, filename + strlen(filename), 10);
-  strcat(filename, ".txt");
-  return filename;
-}
-*/

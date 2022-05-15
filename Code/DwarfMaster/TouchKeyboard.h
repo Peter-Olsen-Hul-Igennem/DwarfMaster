@@ -22,7 +22,9 @@ class TouchKeyboard
     void drawCursor(byte pos);
     int moveCursor(bool forward, int currentPos, int maxPos);
     String mapPointToKeyboardButton(Point point, bool letters);
-    
+
+    const uint16_t BACKGROUND_COLOR = TFT_LIGHTGREY;
+    const uint16_t LINE_COLOR = TFT_DARKGREY;
     const uint16_t DISPLAY_WIDTH         = 320;
     const uint16_t DISPLAY_HEIGHT        = 240;
 

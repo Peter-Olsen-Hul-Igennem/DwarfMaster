@@ -9,7 +9,6 @@ class PushButton {
     byte getState();
     bool isPressed();
   private:
-    //void init();
     void update();
 
     byte pin;
