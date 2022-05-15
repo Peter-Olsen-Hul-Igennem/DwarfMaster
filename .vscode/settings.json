@@ -1,0 +1,33 @@
+{
+  "task.autoDetect": "off",
+  "compiler-explorer.url": "http://localhost:10240",
+  "compiler-explorer.compiler": "g54",
+  "compiler-explorer.options": [
+    "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/src'",
+    "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/cores/teensy4'",
+    "-I'C:/Users/peter/Documents/Arduino/libraries/ArduinoJson/src'",
+    "-I'C:/Users/peter/Documents/Arduino/libraries/Adafruit_BusIO'",
+    "-I'C:/Users/peter/Documents/Arduino/libraries/Adafruit_TouchScreen'",
+    "-I'C:/Users/peter/Documents/Arduino/libraries/Adafruit_GFX_Library'",
+    "-I'C:/Users/peter/Documents/Arduino/libraries/MCUFRIEND_kbv'",
+    "-I'C:/Users/peter/Documents/Arduino/libraries/MCUFRIEND_kbv/utility'",
+    "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/EEPROM'",
+    "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/SD/src'",
+    "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/SdFat/src'",
+    "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/SPI'",
+    "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/Wire'",
+    "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/Wire/utility'",
+    "-D__IMXRT1062__ -DTEENSYDUINO=156",
+    "-DF_CPU=600000000",
+    "-DUSB_MIDI",
+    "-DLAYOUT_US_ENGLISH",
+    "-DARDUINO_TEENSY41",
+    "-DARDUINO=10815",
+    "-std=gnu++14 -fno-exceptions -fpermissive -fno-rtti -fno-threadsafe-statics -felide-constructors -Wno-error=narrowing",
+    "",
+    "-mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16",
+    "-O2",
+    "-g -Wall -ffunction-sections -fdata-sections -nostdlib",
+    null
+  ]
+}

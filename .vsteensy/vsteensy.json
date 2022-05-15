@@ -1,0 +1,41 @@
+{
+  "version": "2",
+  "target": "vsCode",
+  "buildSystem": "makefile",
+  "debugSupport": "none",
+  "configurations": [
+    {
+      "name": "default",
+      "guid": "a49430cb-0a0a-469d-abe5-0f028e0f12b2",
+      "setupType": "expert",
+      "coreBase": "C:\\Program Files (x86)\\Arduino\\hardware\\teensy\\avr",
+      "compilerBase": "C:\\Program Files (x86)\\Arduino\\hardware\\tools\\arm",
+      "makefileExtension": null,
+      "coreStrategy": "copy",
+      "stdLib": "newlib",
+      "sharedLibraries": [
+        "ArduinoJson",
+        "Adafruit_BusIO",
+        "Adafruit_TouchScreen",
+        "Adafruit_GFX_Library",
+        "MCUFRIEND_kbv"
+      ],
+      "projectLibraries": [
+        "EEPROM",
+        "SD",
+        "SdFat",
+        "SPI",
+        "Wire"
+      ],
+      "board": {
+        "name": "Teensy 4.1",
+        "options": {
+          "USB Type": "MIDI",
+          "CPU Speed": "600 MHz",
+          "Optimize": "Faster",
+          "Keyboard Layout": "US English"
+        }
+      }
+    }
+  ]
+}
