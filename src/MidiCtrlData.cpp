@@ -1,221 +1,230 @@
+#include "MidiCtrlData.h"
+#include <EEPROM.h>
 #include <SD.h>
 #include <SPI.h>
-#include <EEPROM.h>
-#include "MidiCtrlData.h"
-
 
 MidiCtrlData::MidiCtrlData(const char* dataVersion)
 {
-  this->dataVersion = dataVersion;
-  
-  folder = strdup(prefixVER);
-  strcat(folder, dataVersion);
-  
-  if (verifyVersionFolderExists())
-  {
-    Serial.println("Version folder OK");
-    deserialize();
-  }
-  else
-  {
-    Serial.println("Version folder ERR");
-    initialize();
-  }
+    this->dataVersion = dataVersion;
+
+    folder = strdup(prefixVER);
+    strcat(folder, dataVersion);
+
+    if (verifyVersionFolderExists())
+    {
+        Serial.println("Version folder OK");
+        deserialize();
+    }
+    else
+    {
+        Serial.println("Version folder ERR");
+        initialize();
+    }
 }
 
 Bank* MidiCtrlData::getBank(byte bankNbr)
 {
-  return &banks[bankNbr];
+    return &banks[bankNbr];
+}
+
+void MidiCtrlData::saveBank(const byte bankNbr)
+{
+    serializeBank(bankNbr);
 }
 
 void MidiCtrlData::initialize()
 {
-  for (int i = 0; i < NUMBER_OF_BANKS; i++)
-  {
-    //char bankname[BANK_NAME_LENGTH + 1] = "BANK ";
-    //itoa(i, bankname + strlen(bankname), 10);
-    //strcpy(banks[i].name, bankname);
-    strcpy(banks[i].name, "BANK");
-    banks[i].pcMessage.channel = 0;
-    banks[i].pcMessage.valueOn = 0;
-    banks[i].pcMessage.valueOff = 0;
-    for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
+    for (int i = 0; i < NUMBER_OF_BANKS; i++)
     {
-      strcpy(banks[i].buttons[j].name, "PATCH");
-      banks[i].buttons[j].isPatch = true;
-      banks[i].buttons[j].isSecondPushEnabled = false;
-      banks[i].buttons[j].isInitialToggleStateOn = false;
-      for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
-      {
-        banks[i].buttons[j].pcMessages[k].channel = 0;
-        banks[i].buttons[j].pcMessages[k].valueOn = 0;
-        banks[i].buttons[j].pcMessages[k].valueOff = 0;
-        banks[i].buttons[j].ccMessages[k].channel = 0;
-        banks[i].buttons[j].ccMessages[k].ccNumber = 0;
-        banks[i].buttons[j].ccMessages[k].valueOn = 0;
-        banks[i].buttons[j].ccMessages[k].valueOff = 0;
-      }
+        // char bankname[BANK_NAME_LENGTH + 1] = "BANK ";
+        // itoa(i, bankname + strlen(bankname), 10);
+        // strcpy(banks[i].name, bankname);
+        strcpy(banks[i].name, "BANK");
+        banks[i].pcMessage.channel  = 0;
+        banks[i].pcMessage.valueOn  = 0;
+        banks[i].pcMessage.valueOff = 0;
+        for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
+        {
+            strcpy(banks[i].buttons[j].name, "PATCH");
+            banks[i].buttons[j].isPatch                = true;
+            banks[i].buttons[j].isSecondPushEnabled    = false;
+            banks[i].buttons[j].isInitialToggleStateOn = false;
+            for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
+            {
+                banks[i].buttons[j].pcMessages[k].channel  = 0;
+                banks[i].buttons[j].pcMessages[k].valueOn  = 0;
+                banks[i].buttons[j].pcMessages[k].valueOff = 0;
+                banks[i].buttons[j].ccMessages[k].channel  = 0;
+                banks[i].buttons[j].ccMessages[k].ccNumber = 0;
+                banks[i].buttons[j].ccMessages[k].minValue = 0;
+                banks[i].buttons[j].ccMessages[k].maxValue = 0;
+            }
+        }
     }
-  }
-  serialize();
+    serialize();
 }
 
 void MidiCtrlData::deserialize()
 {
-  for (int i = 0; i < NUMBER_OF_BANKS; i++)
-  {
-    deserializeBank(i);
-  }
+    for (int i = 0; i < NUMBER_OF_BANKS; i++)
+    {
+        deserializeBank(i);
+    }
 }
 
 void MidiCtrlData::deserializeBank(const int id)
 {
-  DynamicJsonDocument doc(arduinoJsonDocSize);
-  loadBankFromFile(buildPath(id), doc);
+    DynamicJsonDocument doc(arduinoJsonDocSize);
+    loadBankFromFile(buildPath(id), doc);
 
-  strlcpy(banks[id].name, doc["name"], sizeof(banks[id].name));
-  banks[id].pcMessage.channel = doc["pcChannel"];
-  banks[id].pcMessage.valueOn = doc["pcValueOn"];
-  banks[id].pcMessage.valueOff = doc["pcValueOff"];
+    strlcpy(banks[id].name, doc["name"], sizeof(banks[id].name));
+    banks[id].pcMessage.channel  = doc["pcChannel"];
+    banks[id].pcMessage.valueOn  = doc["pcValueOn"];
+    banks[id].pcMessage.valueOff = doc["pcValueOff"];
 
-  for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
-  {
-    JsonObject btn = doc["button" + String(j)];
-    strlcpy(banks[id].buttons[j].name, btn["name"], sizeof(banks[id].buttons[j].name));
-    banks[id].buttons[j].isPatch = btn["isPatch"];
-    banks[id].buttons[j].isSecondPushEnabled = btn["isSecondPushEnabled"];
-    banks[id].buttons[j].isInitialToggleStateOn = btn["isInitialToggleStateOn"];
-    
-    for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
+    for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
     {
-      JsonObject msg = btn["message" + String(k)];
-      banks[id].buttons[j].pcMessages[k].channel = msg["pcChannel"];
-      banks[id].buttons[j].pcMessages[k].valueOn = msg["pcValueOn"];
-      banks[id].buttons[j].pcMessages[k].valueOff = msg["pcValueOff"];
-      banks[id].buttons[j].ccMessages[k].channel = msg["ccChannel"];
-      banks[id].buttons[j].ccMessages[k].ccNumber = msg["ccNumber"];
-      banks[id].buttons[j].ccMessages[k].valueOn = msg["ccValueOn"];
-      banks[id].buttons[j].ccMessages[k].valueOff = msg["ccValueOff"];
-    }
-  }
-}
+        JsonObject btn = doc["button" + String(j)];
+        strlcpy(banks[id].buttons[j].name, btn["name"], sizeof(banks[id].buttons[j].name));
+        banks[id].buttons[j].isPatch                = btn["isPatch"];
+        banks[id].buttons[j].isSecondPushEnabled    = btn["isSecondPushEnabled"];
+        banks[id].buttons[j].isInitialToggleStateOn = btn["isInitialToggleStateOn"];
 
+        for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
+        {
+            JsonObject msg                              = btn["message" + String(k)];
+            banks[id].buttons[j].pcMessages[k].channel  = msg["pcChannel"];
+            banks[id].buttons[j].pcMessages[k].valueOn  = msg["pcValueOn"];
+            banks[id].buttons[j].pcMessages[k].valueOff = msg["pcValueOff"];
+            banks[id].buttons[j].ccMessages[k].channel  = msg["ccChannel"];
+            banks[id].buttons[j].ccMessages[k].ccNumber = msg["ccNumber"];
+            banks[id].buttons[j].ccMessages[k].minValue = msg["ccMinValue"];
+            banks[id].buttons[j].ccMessages[k].maxValue = msg["ccMaxValue"];
+        }
+    }
+}
 
 void MidiCtrlData::serialize()
 {
-  for (int i = 0; i < NUMBER_OF_BANKS; i++)
-  {
-    serializeBank(i);
-  }
+    for (int i = 0; i < NUMBER_OF_BANKS; i++)
+    {
+        serializeBank(i);
+    }
 }
 
 void MidiCtrlData::serializeBank(const int id)
 {
-  DynamicJsonDocument doc(arduinoJsonDocSize);
+    DynamicJsonDocument doc(arduinoJsonDocSize);
 
-  doc["name"] = banks[id].name;
-  doc["pcChannel"] = banks[id].pcMessage.channel;
-  doc["pcValueOn"] = banks[id].pcMessage.valueOn;
-  doc["pcValueOff"] = banks[id].pcMessage.valueOff;
+    doc["name"]       = banks[id].name;
+    doc["pcChannel"]  = banks[id].pcMessage.channel;
+    doc["pcValueOn"]  = banks[id].pcMessage.valueOn;
+    doc["pcValueOff"] = banks[id].pcMessage.valueOff;
 
-  for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
-  {
-    JsonObject btn = doc.createNestedObject("button" + String(j));
-    btn["name"] = banks[id].buttons[j].name;
-    btn["isPatch"] = banks[id].buttons[j].isPatch;
-    btn["isSecondPushEnabled"] = banks[id].buttons[j].isSecondPushEnabled;
-    btn["isInitialToggleStateOn"] = banks[id].buttons[j].isInitialToggleStateOn;
-
-    for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
+    for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
     {
-      JsonObject msg = btn.createNestedObject("message" + String(k));
-      msg["pcChannel"] = banks[id].buttons[j].pcMessages[k].channel;
-      msg["pcValueOn"] = banks[id].buttons[j].pcMessages[k].valueOn;
-      msg["pcValueOff"] = banks[id].buttons[j].pcMessages[k].valueOff;
-      msg["ccChannel"] = banks[id].buttons[j].ccMessages[k].channel;
-      msg["ccNumber"] = banks[id].buttons[j].ccMessages[k].ccNumber;
-      msg["ccValueOn"] = banks[id].buttons[j].ccMessages[k].valueOn;
-      msg["ccValueOff"] = banks[id].buttons[j].ccMessages[k].valueOff;
+        JsonObject btn                = doc.createNestedObject("button" + String(j));
+        btn["name"]                   = banks[id].buttons[j].name;
+        btn["isPatch"]                = banks[id].buttons[j].isPatch;
+        btn["isSecondPushEnabled"]    = banks[id].buttons[j].isSecondPushEnabled;
+        btn["isInitialToggleStateOn"] = banks[id].buttons[j].isInitialToggleStateOn;
+
+        for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
+        {
+            JsonObject msg    = btn.createNestedObject("message" + String(k));
+            msg["pcChannel"]  = banks[id].buttons[j].pcMessages[k].channel;
+            msg["pcValueOn"]  = banks[id].buttons[j].pcMessages[k].valueOn;
+            msg["pcValueOff"] = banks[id].buttons[j].pcMessages[k].valueOff;
+            msg["ccChannel"]  = banks[id].buttons[j].ccMessages[k].channel;
+            msg["ccNumber"]   = banks[id].buttons[j].ccMessages[k].ccNumber;
+            msg["ccMinValue"] = banks[id].buttons[j].ccMessages[k].minValue;
+            msg["ccMaxValue"] = banks[id].buttons[j].ccMessages[k].maxValue;
+        }
     }
-  }
-  serializeJsonPretty(doc, Serial);
-  Serial.println();
+    // serializeJsonPretty(doc, Serial);
+    // Serial.println();
 
-  saveBankToFile(buildPath(id), doc);
+    saveBankToFile(buildPath(id), doc);
 }
 
+void MidiCtrlData::loadBankFromFile(const char* path, DynamicJsonDocument& doc)
+{
 
+    if (!SD.begin(BUILTIN_SDCARD))
+    {
+        Serial.println("SD initialization failed!");
+    }
 
-void MidiCtrlData::loadBankFromFile(const char *path, DynamicJsonDocument &doc) {
-  
-  if (!SD.begin(BUILTIN_SDCARD)) {
-    Serial.println("SD initialization failed!");
-  }
+    File file = SD.open(path);
+    if (!file)
+    {
+        Serial.println(F("Failed to create file"));
+        Serial.println(path);
+    }
 
-  File file = SD.open(path);
-  if (!file) {
-    Serial.println(F("Failed to create file"));
-    Serial.println(path);
-  }
+    DeserializationError error = deserializeJson(doc, file);
+    if (error)
+        Serial.println(F("Failed to read file, using default configuration"));
 
-  DeserializationError error = deserializeJson(doc, file);
-  if (error)
-    Serial.println(F("Failed to read file, using default configuration"));
-
-  file.close();
+    file.close();
 }
 
-void MidiCtrlData::saveBankToFile(const char *path, const DynamicJsonDocument &doc) {
-  
-  if (!SD.begin(BUILTIN_SDCARD)) {
-    Serial.println("SD initialization failed!");
-    return;
-  }
-  
-  if (!SD.exists(folder))
-    SD.mkdir(folder);
+void MidiCtrlData::saveBankToFile(const char* path, const DynamicJsonDocument& doc)
+{
 
-  // Delete existing file, otherwise the configuration is appended to the file
-  SD.remove(path);
+    if (!SD.begin(BUILTIN_SDCARD))
+    {
+        Serial.println("SD initialization failed!");
+        return;
+    }
 
-  // Open file for writing
-  File file = SD.open(path, FILE_WRITE);
-  if (!file) {
-    Serial.println(F("Failed to create file"));
-    Serial.println(path);
-    return;
-  }
+    if (!SD.exists(folder))
+        SD.mkdir(folder);
 
-  // Serialize JSON to file
-  if (serializeJson(doc, file) == 0) {
-    Serial.println(F("Failed to write to file"));
-  }
+    // Delete existing file, otherwise the configuration is appended to the file
+    SD.remove(path);
 
-  // Close the file
-  file.close();
+    // Open file for writing
+    File file = SD.open(path, FILE_WRITE);
+    if (!file)
+    {
+        Serial.println(F("Failed to create file"));
+        Serial.println(path);
+        return;
+    }
+
+    // Serialize JSON to file
+    if (serializeJson(doc, file) == 0)
+    {
+        Serial.println(F("Failed to write to file"));
+    }
+
+    // Close the file
+    file.close();
 }
 
 bool MidiCtrlData::verifyVersionFolderExists()
 {
-  if (!SD.begin(BUILTIN_SDCARD)) {
-    Serial.println("SD initialization failed!");
-    return false;
-  }
-  
-  return SD.exists(folder);
+    if (!SD.begin(BUILTIN_SDCARD))
+    {
+        Serial.println("SD initialization failed!");
+        return false;
+    }
+
+    return SD.exists(folder);
 }
 
 char* MidiCtrlData::buildPath(int id)
 {
-  char filename[10];
-  strcpy(filename, prefixBANK);
-  itoa(id, filename + strlen(filename), 10);
-  strcat(filename, ".txt");
+    char filename[10];
+    strcpy(filename, prefixBANK);
+    itoa(id, filename + strlen(filename), 10);
+    strcat(filename, ".txt");
 
-  static char path[20];
-  strcpy(path, folder);
-  strcat(path, "/");
-  strcat(path, filename);
-  
-  return path;
+    static char path[20];
+    strcpy(path, folder);
+    strcat(path, "/");
+    strcat(path, filename);
+
+    return path;
 }

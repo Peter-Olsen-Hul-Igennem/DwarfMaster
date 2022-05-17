@@ -52,8 +52,8 @@ void MidiCtrlData::initialize()
         banks[i].buttons[j].pcMessages[k].valueOff = 0;
         banks[i].buttons[j].ccMessages[k].channel = 0;
         banks[i].buttons[j].ccMessages[k].ccNumber = 0;
-        banks[i].buttons[j].ccMessages[k].valueOn = 0;
-        banks[i].buttons[j].ccMessages[k].valueOff = 0;
+        banks[i].buttons[j].ccMessages[k].minValue = 0;
+        banks[i].buttons[j].ccMessages[k].maxValue = 0;
       }
     }
   }
@@ -94,8 +94,8 @@ void MidiCtrlData::deserializeBank(const int id)
       banks[id].buttons[j].pcMessages[k].valueOff = msg["pcValueOff"];
       banks[id].buttons[j].ccMessages[k].channel = msg["ccChannel"];
       banks[id].buttons[j].ccMessages[k].ccNumber = msg["ccNumber"];
-      banks[id].buttons[j].ccMessages[k].valueOn = msg["ccValueOn"];
-      banks[id].buttons[j].ccMessages[k].valueOff = msg["ccValueOff"];
+      banks[id].buttons[j].ccMessages[k].minValue = msg["ccValueOn"];
+      banks[id].buttons[j].ccMessages[k].maxValue = msg["ccValueOff"];
     }
   }
 }
@@ -134,8 +134,8 @@ void MidiCtrlData::serializeBank(const int id)
       msg["pcValueOff"] = banks[id].buttons[j].pcMessages[k].valueOff;
       msg["ccChannel"] = banks[id].buttons[j].ccMessages[k].channel;
       msg["ccNumber"] = banks[id].buttons[j].ccMessages[k].ccNumber;
-      msg["ccValueOn"] = banks[id].buttons[j].ccMessages[k].valueOn;
-      msg["ccValueOff"] = banks[id].buttons[j].ccMessages[k].valueOff;
+      msg["ccValueOn"] = banks[id].buttons[j].ccMessages[k].minValue;
+      msg["ccValueOff"] = banks[id].buttons[j].ccMessages[k].maxValue;
     }
   }
   serializeJsonPretty(doc, Serial);

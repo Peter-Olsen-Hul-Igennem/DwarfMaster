@@ -4,29 +4,27 @@
 #include "PushButton.h"
 #include <Arduino.h>
 
-
-class ButtonState {
-  public:
+class ButtonState
+{
+ public:
     static ButtonState* getInstance();
 
     bool isBankDownState();
     bool isBankUpState();
-    byte getSingleButtonPressed(); 
-    
-  private:
-    ButtonState(); //Singleton
+    byte getSingleButtonPressed();
+
+ private:
+    ButtonState(); // Singleton
     void determineState();
-    byte getButtonPressed(); 
+    byte getButtonPressed();
 
     static ButtonState* instance;
     static const byte NUMBER_OF_PUSHBUTTONS = 6;
     PushButton* buttons[NUMBER_OF_PUSHBUTTONS];
     byte state;
-    unsigned long lastTime = 0;
+    unsigned long lastTime         = 0;
     const unsigned long stateDelay = 50;
-    const byte FIRST_PIN_NBR = 33;
+    const byte FIRST_PIN_NBR       = 33;
 };
-
-
 
 #endif

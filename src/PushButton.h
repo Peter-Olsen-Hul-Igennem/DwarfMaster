@@ -3,21 +3,21 @@
 
 #include <Arduino.h>
 
-class PushButton {
-  public:
+class PushButton
+{
+ public:
     PushButton(const byte pin);
     byte getState();
     bool isPressed();
-  private:
+
+ private:
     void update();
 
     byte pin;
     byte state;
     byte lastReading;
-    unsigned long lastDebounceTime = 0;
+    unsigned long lastDebounceTime    = 0;
     const unsigned long debounceDelay = 20;
 };
-
-
 
 #endif

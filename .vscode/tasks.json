@@ -36,6 +36,19 @@
         "-j",
         "-Otarget"
       ]
+    },
+    {
+      "label": "Upload (TyCommander)",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "command": "C:/VisualTeensy/make.exe",
+      "args": [
+        "uploadTy",
+        "-j",
+        "-Otarget"
+      ]
     }
   ],
   "version": "2.0.0",

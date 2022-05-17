@@ -21,8 +21,8 @@ struct CcMsg
 {
   char channel;
   char ccNumber;
-  char valueOn;
-  char valueOff;
+  char minValue;
+  char maxValue;
 };
 
 struct Button
