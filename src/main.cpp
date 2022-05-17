@@ -538,26 +538,27 @@ bool doPcCcEdit(Button* button, uint8_t btnNbr, PcCcEnum pcCc)
     {
         btnName[2 + i] = button->name[i];
     }
-    switch (pcCc)
-    {
-        case PC_1_8:
-            screen.drawEdit(btnName, PC_1_EDIT_LABELS);
-            break;
-        case PC_9_16:
-            screen.drawEdit(btnName, PC_2_EDIT_LABELS);
-            offset = 8;
-            break;
-        case CC_1_8:
-            screen.drawEdit(btnName, CC_1_EDIT_LABELS);
-            break;
-        case CC_9_16:
-            screen.drawEdit(btnName, CC_2_EDIT_LABELS);
-            offset = 8;
-            break;
-    }
+    
 
     while (loop)
     {
+        switch (pcCc)
+        {
+            case PC_1_8:
+                screen.drawEdit(btnName, PC_1_EDIT_LABELS);
+                break;
+            case PC_9_16:
+                screen.drawEdit(btnName, PC_2_EDIT_LABELS);
+                offset = 8;
+                break;
+            case CC_1_8:
+                screen.drawEdit(btnName, CC_1_EDIT_LABELS);
+                break;
+            case CC_9_16:
+                screen.drawEdit(btnName, CC_2_EDIT_LABELS);
+                offset = 8;
+                break;
+        }
         screen.waitForButtonReleased();
         btn = screen.getButtonPushed();
         switch (btn)
