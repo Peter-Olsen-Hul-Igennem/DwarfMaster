@@ -1,4 +1,6 @@
 #include "Screen.h"
+#include "ButtonState.h"
+
 
 Screen::Screen()
 {
@@ -19,13 +21,13 @@ void Screen::blankScreen()
     tft.fillScreen(TFT_BLACK);
 }
 
-void Screen::drawPlayButton(const uint8_t btnNbr, const bool patch, const bool selectedPatch, const bool btnStateFirst, const char* btnLabel)
+void Screen::drawPlayButton(const uint8_t btnNbr, const bool patch, const bool selectedPatch, const bool btnStateFirst, const char* btnLabel, bool invertSelected)
 {
     uint16_t bgColor  = TFT_LIGHTGREY;
     uint16_t txtColor = TFT_BLACK;
     if (patch)
     {
-        if (selectedPatch)
+        if (selectedPatch && !invertSelected) 
         {
             if (btnStateFirst)
             {
@@ -137,9 +139,9 @@ String Screen::getKeyboardInputFromUser(const String* contextLabel, const String
     return alphaTouchKeyb.getInputFromUser(contextLabel, oldText, maxLength);
 }
 
-uint8_t Screen::getNumKeyboardInputFromUser(const String* contextLabel, const String* oldVal, const byte maxLength)
+uint16_t Screen::getNumKeyboardInputFromUser(const String* contextLabel, const String* oldVal, const byte maxLength)
 {
-    uint8_t result = 0;
+    uint16_t result = 0;
     String newVal = numTouchKeyb.getInputFromUser(contextLabel, oldVal, maxLength);
     result = newVal.toInt();
     return result;
@@ -164,11 +166,19 @@ void Screen::drawEdit(const char* label, const char** btnLabels)
 }
 
 
+void Screen::drawEdit(const char* label, const EditLabelAttributes* btnLabels)
+{
+    drawEditGrid();
+    printEditLabel(label);
+    printEditButtonLabels(btnLabels);
+}
 
 int Screen::getButtonPushed() {
     uint16_t cnt = 0;
     int prevButton = -2;
     int button = -1;
+
+    ButtonState* btnState = btnState->getInstance();
     
     Point p;
     while (true)
@@ -188,6 +198,10 @@ int Screen::getButtonPushed() {
                 if (cnt > 100 && button != -1)
                     break;
             }
+        }
+        if (btnState->getSingleButtonPressed() == 1) // Footswitch 1: cancel
+        {
+            return 0;
         }
     }
     return button;
@@ -253,6 +267,33 @@ void Screen::printEditButtonLabels(const char** labels)
     }
 }
 
+void Screen::printEditButtonLabels(const EditLabelAttributes* labels)
+{
+    tft.setTextColor(TFT_BLACK);
+    tft.setTextSize(2);
+    byte cnt = 0;
+    int y    = 0;
+    int x    = 0;
+    for (int j = 1; j < 4; j++)
+    {
+        y = 15 + (Y_SIZE * j);
+        for (int i = 0; i < 3; i++)
+        {
+            x = 7 + (X_SIZE * i);
+            tft.fillRect(x, y, 95, 40, BACKGROUND_COLOR);
+            tft.setTextSize(2);
+            tft.setCursor(x, y);
+            tft.print(labels[cnt].label1);
+            tft.setTextSize(1);
+            tft.setCursor(x+5, y+25);
+            tft.print(labels[cnt].label2);
+            if (labels[cnt].color > 0)
+                tft.fillRect(x, y+25, 95, 5, labels[cnt].color);
+            cnt++;
+        }
+    }
+}
+
 bool Screen::getBinaryInputFromUser(const char* label1, const char* label2, const bool firstIsTrue)
 {
     bool prevChoice = firstIsTrue;
@@ -262,6 +303,7 @@ bool Screen::getBinaryInputFromUser(const char* label1, const char* label2, cons
     
     waitForButtonReleased();
 
+    ButtonState* btnState = btnState->getInstance();
     Point p;
     while (true)
     {
@@ -276,7 +318,6 @@ bool Screen::getBinaryInputFromUser(const char* label1, const char* label2, cons
             if (prevChoice != newChoice)
             {
                 drawBinaryEdit(label1, label2, newChoice);
-                prevChoice = prevChoice;
                 waitForButtonReleased();
                 break;
             }
@@ -286,6 +327,10 @@ bool Screen::getBinaryInputFromUser(const char* label1, const char* label2, cons
                 break;
             }
         }
+        if (btnState->getSingleButtonPressed() == 1) // Footswitch 1: cancel
+        {
+            return firstIsTrue;
+        }
     }
     return newChoice;
 }
@@ -294,9 +339,9 @@ void Screen::drawBinaryEdit(const char* label1, const char* label2, bool firstIs
 {
     tft.fillScreen(BACKGROUND_COLOR);
     if (firstIsTrue)
-        tft.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT / 2, CHOOSEN_COLOR);
+        tft.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT / 2, TFT_GREEN);
     else
-        tft.fillRect(0, DISPLAY_HEIGHT / 2, DISPLAY_WIDTH, DISPLAY_HEIGHT, CHOOSEN_COLOR);
+        tft.fillRect(0, DISPLAY_HEIGHT / 2, DISPLAY_WIDTH, DISPLAY_HEIGHT, TFT_RED);
 
     for (size_t i = 0; i < 5; i++)
     {

@@ -21,7 +21,7 @@ void loop();
 void playMode();
 void bankChange(bool up);
 void drawPlayScreen();
-void drawPlayBtns(const Bank* bank, const bool overrideSelected);
+void drawPlayBtns(const Bank* bank, const bool overrideSelected, const bool invertSelected = false);
 void drawPlayBank(const int bnkNbr, const Bank* bank, const bool inverted);
 void sendBankMidi(Bank* bank);
 void sendButtonMidi(Button button, bool stateFirst);
@@ -35,16 +35,41 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
 void loadDataStateInfo();
 void saveDataStateInfo();
 void bankNumToChar(uint8_t num, char* buf);
+void resetToggleStates();
+void setMainLabelAttributes();
+void setBankLabelAttributes(const Bank* bank);
+void setButtonLabelAttributes(const Button* button);
+void setPc1LabelAttributes(const Button* button);
+void setPc2LabelAttributes(const Button* button);
+void setCc1LabelAttributes(const Button* button);
+void setCc2LabelAttributes(const Button* button);
+void setPcDetailLabelAttributes(const PcMsg* msg);
+void setCcDetailLabelAttributes(const CcMsg* msg);
 
-const char* MAIN_EDIT_LABELS[9]{"  EXIT", "  BANK", "UTILITY", " BTN #4", " BTN #5", " BTN #6", " BTN #1", " BTN #2", " BTN #3"};
-const char* BANK_EDIT_LABELS[9]{"  EXIT", "", "", "  NAME", " PC CH", " PC NBR", "", "", ""};
-const char* BUTTON_EDIT_LABELS[9]{"  EXIT", "  NAME", " PATCH", " PC 1-8", " PC 9-16", " 2. PUSH", " CC 1-8", " CC 9-16", " TOGL ON"};
-const char* PC_1_EDIT_LABELS[9]{"  EXIT", "  PC #1", "  PC #2", "  PC #3", "  PC #4", "  PC #5", "  PC #6", "  PC #7", "  PC #8"};
-const char* PC_2_EDIT_LABELS[9]{"  EXIT", "  PC #9", " PC #10", " PC #11", " PC #12", " PC #13", " PC #14", " PC #15", " PC #16"};
-const char* CC_1_EDIT_LABELS[9]{"  EXIT", "  CC #1", "  CC #2", "  CC #3", "  CC #4", "  CC #5", "  CC #6", "  CC #7", "  CC #8"};
-const char* CC_2_EDIT_LABELS[9]{"  EXIT", "  CC #9", " CC #10", " CC #11", " CC #12", " CC #13", " CC #14", " CC #15", " CC #16"};
-const char* PC_DETAIL_EDIT_LABELS[9]{"  EXIT", " PC CH", " PC NBR", "", "", "", "", "", ""};
+//const char* MAIN_EDIT_LABELS[9]{"  EXIT", "  BANK", "UTILITY", " BTN #4", " BTN #5", " BTN #6", " BTN #1", " BTN #2", " BTN #3"};
+//const char* BANK_EDIT_LABELS[9]{"  EXIT", "", "", "  NAME", " PC CH", " PC NBR", "", "", ""};
+//const char* BUTTON_EDIT_LABELS[9]{"  EXIT", "  NAME", " PATCH", " PC 1-8", " PC 9-16", " 2. PUSH", " CC 1-8", " CC 9-16", " TOGL ON"};
+//const char* PC_1_EDIT_LABELS[9]{"  EXIT", "  PC #1", "  PC #2", "  PC #3", "  PC #4", "  PC #5", "  PC #6", "  PC #7", "  PC #8"};
+//const char* PC_2_EDIT_LABELS[9]{"  EXIT", "  PC #9", " PC #10", " PC #11", " PC #12", " PC #13", " PC #14", " PC #15", " PC #16"};
+//const char* CC_1_EDIT_LABELS[9]{"  EXIT", "  CC #1", "  CC #2", "  CC #3", "  CC #4", "  CC #5", "  CC #6", "  CC #7", "  CC #8"};
+//const char* CC_2_EDIT_LABELS[9]{"  EXIT", "  CC #9", " CC #10", " CC #11", " CC #12", " CC #13", " CC #14", " CC #15", " CC #16"};
+//const char* PC_DETAIL_EDIT_LABELS[9]{"  EXIT", " PC CH", " PC NBR", "", "", "", "", "", ""};
 const char* CC_DETAIL_EDIT_LABELS[9]{"  EXIT", " CC CH", " CC NBR", "", "MIN VAL", "MAX VAL", "", "", ""};
+/*
+EditLabelAttributes mainEditLabelAttrib[9] = {{"  EXIT\0", " \0", 0}, {"  BANK\0", " \0", 0}, {"UTILITY\0", " \0", 0}, 
+                                              {" BTN#4\0", " \0", 0}, {" BTN#5\0", " \0", 0}, {" BTN#6\0", " \0", 0}, 
+                                              {" BTN#1\0", " \0", 0}, {" BTN#2\0", " \0", 0}, {" BTN#3\0", " \0", 0}};
+
+EditLabelAttributes bankEditLabelAttrib[9] = {{"  EXIT\0", " \0", 0}, {" \0", " \0", 0}, {" \0", " \0", 0}, 
+                                              {"  NAME\0", " \0", 0}, {" PC CH\0", " \0", 0}, {" PC NBR\0", " \0", 0}, 
+                                              {" \0", " \0", 0}, {" \0", " \0", 0}, {" \0", " \0", 0}};
+
+EditLabelAttributes buttonEditLabelAttrib[9] = {{"  EXIT\0", " \0", 0}, {"  NAME\0", " \0", 0}, {" PATCH\0", " \0", 0}, 
+                                                {" PC 1-8\0", " \0", 0}, {" PC 9-16\0", " \0", 0}, {" 2. PUSH\0", " \0", 0}, 
+                                                {" CC 1-8\0", " \0", 0}, {" CC 9-16\0", " \0", 0}, {" TOGL ON\0", " \0", 0}};
+
+*/
+EditLabelAttributes editLabelAttrib[9];
 
 Screen screen;
 MidiCtrlData* mcd;
@@ -58,55 +83,48 @@ struct DataState
 };
 DataState dataState;
 
+bool toggleStates[NUMBER_OF_BUTTONS];
+
 enum CtrlState { PLAY,
                  PLAY_BANK_UP,
                  PLAY_BANK_DOWN,
                  EDIT };
 CtrlState ctrlState = PLAY;
-// CtrlState prevCtrlState = EDIT;
 
 void setup()
 {
     Serial.begin(9600);
-    delay(1000);
+    //    delay(1000);
 
     loadDataStateInfo();
     mcd = new MidiCtrlData(DATA_VERSION);
-    drawPlayScreen();
 
-    /* bool a = true;
-     bool b = false;
-     bool c = a || b;
-     Serial.println(c);*/
+    resetToggleStates();
+    drawPlayScreen();
 }
 
 void loop()
 {
-
     // switch that sets up state
     switch (ctrlState)
     {
         case PLAY:
             if (screen.playBankPressed())
             {
-                //  prevCtrlState = ctrlState;
                 ctrlState = EDIT;
             }
             else if (btnState->isBankUpState())
             {
-                //  prevCtrlState = ctrlState;
                 ctrlState = PLAY_BANK_UP;
             }
             else if (btnState->isBankDownState())
             {
-                //  prevCtrlState = ctrlState;
                 ctrlState = PLAY_BANK_DOWN;
             }
             break;
 
         case PLAY_BANK_UP:
         case PLAY_BANK_DOWN:
-            //  prevCtrlState = ctrlState;
             ctrlState = PLAY;
             break;
 
@@ -114,11 +132,6 @@ void loop()
             ctrlState = PLAY;
             break;
     }
-
-    /*if (ctrlState != PLAY && prevCtrlState == ctrlState)
-    {
-      return;
-    }*/
 
     // switch that reacts to a given state
     switch (ctrlState)
@@ -137,11 +150,9 @@ void loop()
             break;
     }
 
-    // prevCtrlState = ctrlState;
-
     while (usbMIDI.read())
     {
-        // ignore incoming messages
+       // ignore incoming messages
     }
 }
 
@@ -150,18 +161,30 @@ void playMode()
     byte btnNbr = btnState->getSingleButtonPressed();
     if (btnNbr > 0)
     {
-        if (btnNbr == dataState.btn && dataState.btnStateFirst == true)
+        Bank* bank = mcd->getBank(dataState.bnk);
+        Serial.println(bank->buttons[btnNbr - 1].isSecondPushEnabled);
+        if (bank->buttons[btnNbr - 1].isPatch)
         {
-            dataState.btnStateFirst = false;
+            if (btnNbr == dataState.btn && dataState.btnStateFirst == true)
+            {
+                if (bank->buttons[btnNbr - 1].isSecondPushEnabled) 
+                    dataState.btnStateFirst = false;
+            }
+            else
+            {
+                dataState.btnStateFirst = true;
+            }
+
+            sendButtonMidi(bank->buttons[btnNbr - 1], dataState.btnStateFirst);
+            dataState.btn = btnNbr;
+            saveDataStateInfo();
         }
         else
         {
-            dataState.btnStateFirst = true;
+            toggleStates[btnNbr - 1] = !toggleStates[btnNbr - 1];
+            sendButtonMidi(bank->buttons[btnNbr - 1], toggleStates[btnNbr - 1]);
         }
-        Bank* bank = mcd->getBank(dataState.bnk);
-        sendButtonMidi(bank->buttons[btnNbr - 1], dataState.btnStateFirst);
-        dataState.btn = btnNbr;
-        saveDataStateInfo();
+
         drawPlayBtns(bank, false);
     }
 }
@@ -171,6 +194,8 @@ void bankChange(bool up)
     unsigned long prevMillis = millis();
     unsigned long curMillis;
     const unsigned long period = 500;
+    int btnNbr1;
+    int btnNbr2;
     bool bBlink                = false;
     bool first                 = true;
     byte tmpBankNbr            = dataState.bnk;
@@ -204,15 +229,37 @@ void bankChange(bool up)
             drawPlayBtns(bank, true);
             prevMillis = curMillis;
         }
-        int btnNbr = btnState->getSingleButtonPressed();
-        if (btnNbr > 0 && bank->buttons[btnNbr - 1].isPatch)
+        btnNbr1 = btnState->getSingleButtonPressed();
+        if (btnNbr1 > 0 && bank->buttons[btnNbr1 - 1].isPatch)  // Load selected bank
         {
             sendBankMidi(bank);
-            sendButtonMidi(bank->buttons[btnNbr - 1], dataState.btnStateFirst);
+
             dataState.bnk           = tmpBankNbr;
-            dataState.btn           = btnNbr;
+            dataState.btn           = btnNbr1;
             dataState.btnStateFirst = true;
             saveDataStateInfo();
+            resetToggleStates();
+            
+            bBlink = true;
+            while (true)
+            {
+                btnNbr2 = btnState->getSingleButtonPressed(true);
+                if (btnNbr1 == btnNbr2)                         // The seledted button (patch) is pressed again. 
+                {                                               // This allows the user to wait until the bank is loaded in the Dwarf, before sending patch related midi messages.
+                    break;
+                }
+                curMillis = millis();
+                if (curMillis - prevMillis >= period)
+                {
+                    bBlink = !bBlink;
+                    drawPlayBtns(bank, false, bBlink);
+                    prevMillis = curMillis;
+                }
+            }
+
+
+            sendButtonMidi(bank->buttons[btnNbr1 - 1], dataState.btnStateFirst);
+            
             drawPlayScreen();
 
             break;
@@ -228,7 +275,7 @@ void drawPlayScreen()
     drawPlayBank(dataState.bnk, bank, false);
 }
 
-void drawPlayBtns(const Bank* bank, const bool overrideSelected)
+void drawPlayBtns(const Bank* bank, const bool overrideSelected, const bool invertSelected)
 {
     byte curPatch    = dataState.btn;
     bool selected    = false;
@@ -236,11 +283,20 @@ void drawPlayBtns(const Bank* bank, const bool overrideSelected)
 
     for (byte i = 0; i < NUMBER_OF_BUTTONS; i++)
     {
+        primaryFunc = true;
         if (!overrideSelected)
-            selected = curPatch == i + 1;
-        if (selected && !dataState.btnStateFirst)
-            primaryFunc = false;
-        screen.drawPlayButton(i + 1, bank->buttons[i].isPatch, selected, primaryFunc, bank->buttons[i].name);
+            selected = curPatch == i + 1; // Blue color patch
+        if (bank->buttons[i].isPatch)
+        {
+            if (selected && !dataState.btnStateFirst)
+                primaryFunc = false; // Red color patch
+        }
+        else
+        { 
+            if (toggleStates[i] == true)
+                primaryFunc = false; // Toggle ON
+        }
+        screen.drawPlayButton(i + 1, bank->buttons[i].isPatch, selected, primaryFunc, bank->buttons[i].name, invertSelected);
     }
 }
 
@@ -269,11 +325,15 @@ void sendButtonMidi(Button button, bool stateFirst)
             if (stateFirst)
                 val = button.pcMessages[i].valueOn;
             else
-                val = button.pcMessages[i].valueOff;
+                if (!button.isPatch || button.isSecondPushEnabled) // Toggle or secondPushEnabled
+                    val = button.pcMessages[i].valueOff;
 
             usbMIDI.sendProgramChange(val, button.pcMessages[i].channel);
         }
+    }
 
+    for (uint8_t i = 0; i < NUMBER_OF_MIDI_MSG; i++)
+    {
         if (button.ccMessages[i].channel > 0)
         {
             if (stateFirst)
@@ -281,7 +341,9 @@ void sendButtonMidi(Button button, bool stateFirst)
             else
                 val = button.ccMessages[i].maxValue;
 
-            usbMIDI.sendControlChange(button.ccMessages[i].ccNumber, val, button.ccMessages[i].channel);
+            if (stateFirst || !button.isPatch || (button.isPatch && button.isSecondPushEnabled)) 
+                // First button push - or - button is a toggle - or - second putton push with secondPushEnabled
+                usbMIDI.sendControlChange(button.ccMessages[i].ccNumber, val, button.ccMessages[i].channel);
         }
     }
 }
@@ -308,12 +370,15 @@ void editMode()
         {
             label[3 + i] = bank->name[i];
         }
-        screen.drawEdit(label, MAIN_EDIT_LABELS);
+        setMainLabelAttributes();
+        screen.drawEdit(label, editLabelAttrib);
+        //screen.drawEdit(label, MAIN_EDIT_LABELS);
         screen.waitForButtonReleased();
 
         btn = screen.getButtonPushed();
         switch (btn)
         {
+            case 0: // CALCEL
             case 1: // EXIT
                 loop = false;
                 break;
@@ -339,6 +404,7 @@ void editMode()
                 break;
             }
         }
+
     } while (loop);
 
     if (dirty)
@@ -357,7 +423,7 @@ bool doEditBank(Bank* bank)
     String label;
     String sVal;
     uint8_t nVal;
-    uint8_t newVal;
+    uint16_t newVal;
     char bankName[13];
     bankNumToChar(dataState.bnk, bankName);
     bankName[2] = ' ';
@@ -368,12 +434,15 @@ bool doEditBank(Bank* bank)
         {
             bankName[3 + i] = bank->name[i];
         }
-        screen.drawEdit(bankName, BANK_EDIT_LABELS);
+        setBankLabelAttributes(bank);
+        screen.drawEdit(bankName, editLabelAttrib);
+        //screen.drawEdit(bankName, BANK_EDIT_LABELS);
         screen.waitForButtonReleased();
 
         btn = screen.getButtonPushed();
         switch (btn)
         {
+            case 0: // CALCEL
             case 1: // EXIT
                 loop = false;
                 break;
@@ -450,12 +519,15 @@ bool doEditBtn(Button* button, const uint8_t btnNbr)
         {
             btnName[2 + i] = button->name[i];
         }
-        screen.drawEdit(btnName, BUTTON_EDIT_LABELS);
+        //screen.drawEdit(btnName, BUTTON_EDIT_LABELS);
+        setButtonLabelAttributes(button);
+        screen.drawEdit(btnName, editLabelAttrib);
         screen.waitForButtonReleased();
 
         btn = screen.getButtonPushed();
         switch (btn)
         {
+            case 0: // CALCEL
             case 1: // EXIT
                 loop = false;
                 break;
@@ -484,16 +556,16 @@ bool doEditBtn(Button* button, const uint8_t btnNbr)
                 break;
             }
             case 4: // PC 1-8
-                doPcCcEdit(button, btnNbr, PC_1_8);
+                dirty = doPcCcEdit(button, btnNbr, PC_1_8) || dirty;
                 break;
             case 5: // PC 9-16
-                doPcCcEdit(button, btnNbr, PC_9_16);
+                dirty = doPcCcEdit(button, btnNbr, PC_9_16);
                 break;
             case 6: // 2. PUSH
             {
                 strcpy(label1, " 2. PUSH ON");
                 strcpy(label2, " 2. PUSH OFF");
-                bool result = screen.getBinaryInputFromUser(label1, label2, button->isPatch);
+                bool result = screen.getBinaryInputFromUser(label1, label2, button->isSecondPushEnabled);
                 if (result != button->isSecondPushEnabled)
                 {
                     button->isSecondPushEnabled = result;
@@ -502,16 +574,16 @@ bool doEditBtn(Button* button, const uint8_t btnNbr)
                 break;
             }
             case 7: // CC 1-8
-                doPcCcEdit(button, btnNbr, CC_1_8);
+                dirty = doPcCcEdit(button, btnNbr, CC_1_8) || dirty;
                 break;
             case 8: // CC 9-16
-                doPcCcEdit(button, btnNbr, CC_9_16);
+                dirty = doPcCcEdit(button, btnNbr, CC_9_16);
                 break;
             case 9: // TOGL ON
             {
                 strcpy(label1, "INI TOGL ON");
                 strcpy(label2, "INI TOGL OFF");
-                bool result = screen.getBinaryInputFromUser(label1, label2, button->isPatch);
+                bool result = screen.getBinaryInputFromUser(label1, label2, button->isInitialToggleStateOn);
                 if (result != button->isInitialToggleStateOn)
                 {
                     button->isInitialToggleStateOn = result;
@@ -538,24 +610,31 @@ bool doPcCcEdit(Button* button, uint8_t btnNbr, PcCcEnum pcCc)
     {
         btnName[2 + i] = button->name[i];
     }
-    
 
     while (loop)
     {
         switch (pcCc)
         {
             case PC_1_8:
-                screen.drawEdit(btnName, PC_1_EDIT_LABELS);
+                setPc1LabelAttributes(button);
+                screen.drawEdit(btnName, editLabelAttrib);
+                //screen.drawEdit(btnName, PC_1_EDIT_LABELS);
                 break;
             case PC_9_16:
-                screen.drawEdit(btnName, PC_2_EDIT_LABELS);
+                setPc2LabelAttributes(button);
+                screen.drawEdit(btnName, editLabelAttrib);
+                //screen.drawEdit(btnName, PC_2_EDIT_LABELS);
                 offset = 8;
                 break;
             case CC_1_8:
-                screen.drawEdit(btnName, CC_1_EDIT_LABELS);
+                setCc1LabelAttributes(button);
+                screen.drawEdit(btnName, editLabelAttrib);
+                //screen.drawEdit(btnName, CC_1_EDIT_LABELS);
                 break;
             case CC_9_16:
-                screen.drawEdit(btnName, CC_2_EDIT_LABELS);
+                setCc2LabelAttributes(button);
+                screen.drawEdit(btnName, editLabelAttrib);
+                //screen.drawEdit(btnName, CC_2_EDIT_LABELS);
                 offset = 8;
                 break;
         }
@@ -563,6 +642,7 @@ bool doPcCcEdit(Button* button, uint8_t btnNbr, PcCcEnum pcCc)
         btn = screen.getButtonPushed();
         switch (btn)
         {
+            case 0: // CALCEL
             case 1: // EXIT
                 loop = false;
                 break;
@@ -574,7 +654,7 @@ bool doPcCcEdit(Button* button, uint8_t btnNbr, PcCcEnum pcCc)
             case 7:
             case 8:
             case 9:
-                doPcCcDetailsEdit(button, btnNbr, btn - 1 + offset, pcCc);
+                dirty = doPcCcDetailsEdit(button, btnNbr, btn - 1 + offset, pcCc) || dirty;
                 break;
         }
     }
@@ -590,10 +670,12 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
     String sLabel;
     String sVal;
     uint8_t nVal;
-    uint8_t newVal;
+    uint16_t newVal;
     char label[13];
     char cPcCcIndex[3];
     char btnName[13];
+    PcMsg* pcMsg = nullptr;
+    CcMsg* ccMsg = nullptr;
 
     itoa(pcCcNbr, cPcCcIndex, 10);
     itoa(btnNbr, btnName, 10);
@@ -616,12 +698,12 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
         case PC_1_8:
         case PC_9_16:
             label[7] = 'P';
-            pc = true;
+            pc       = true;
             break;
         case CC_1_8:
         case CC_9_16:
             label[7] = 'C';
-            
+
             pc = false;
             break;
     }
@@ -629,14 +711,24 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
     while (loop)
     {
         if (pc)
-            screen.drawEdit(label, PC_DETAIL_EDIT_LABELS);
+        {
+            pcMsg = &button->pcMessages[pcCcNbr - 1];
+            setPcDetailLabelAttributes(pcMsg);
+            //screen.drawEdit(label, PC_DETAIL_EDIT_LABELS);
+        }
         else
-            screen.drawEdit(label, CC_DETAIL_EDIT_LABELS);
+        {
+            ccMsg = &button->ccMessages[pcCcNbr - 1];
+            setCcDetailLabelAttributes(ccMsg);
+        //    screen.drawEdit(label, CC_DETAIL_EDIT_LABELS);
+        }
+        screen.drawEdit(label, editLabelAttrib);
 
         screen.waitForButtonReleased();
         btn = screen.getButtonPushed();
         switch (btn)
         {
+            case 0: // CALCEL
             case 1: // EXIT
                 loop = false;
                 break;
@@ -651,7 +743,7 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
                     sLabel = String("CC CH");
                     nVal   = button->ccMessages[pcCcNbr - 1].channel;
                 }
-                sVal   = String(nVal);
+                sVal = String(nVal);
                 Serial.println("PRE");
                 newVal = screen.getNumKeyboardInputFromUser(&sLabel, &sVal, 2);
                 Serial.println("POST");
@@ -680,7 +772,7 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
                     nVal   = button->ccMessages[pcCcNbr - 1].ccNumber;
                 }
                 sVal   = String(nVal);
-                newVal = screen.getNumKeyboardInputFromUser(&sLabel, &sVal, 2);
+                newVal = screen.getNumKeyboardInputFromUser(&sLabel, &sVal, 3);
                 if (newVal > 127)
                     newVal = 127;
                 if (nVal != newVal)
@@ -778,4 +870,448 @@ void bankNumToChar(uint8_t num, char* buf)
         buf[0] = '0';
     }
     buf[2] = '\0';
+}
+
+void resetToggleStates()
+{
+    Bank* bank = mcd->getBank(dataState.bnk);
+    for (size_t i = 0; i < NUMBER_OF_BUTTONS; i++)
+    {
+        toggleStates[i] = !bank->buttons[i].isPatch && bank->buttons[i].isInitialToggleStateOn; // true: Button is a toggle and initialToggleOn is true
+    }
+}
+
+void setMainLabelAttributes()
+{
+    strlcpy(editLabelAttrib[0].label1, "  EXIT",9);
+    strlcpy(editLabelAttrib[1].label1, "  BANK", 9);
+    strlcpy(editLabelAttrib[2].label1, "UTILITY", 9);
+    strlcpy(editLabelAttrib[3].label1, " BTN#4", 9);
+    strlcpy(editLabelAttrib[4].label1, " BTN#5", 9);
+    strlcpy(editLabelAttrib[5].label1, " BTN#6", 9);
+    strlcpy(editLabelAttrib[6].label1, " BTN#1", 9);
+    strlcpy(editLabelAttrib[7].label1, " BTN#2", 9);
+    strlcpy(editLabelAttrib[8].label1, " BTN#3", 9);    
+    
+    strlcpy(editLabelAttrib[0].label2, " ", 9);
+    strlcpy(editLabelAttrib[1].label2, " ", 9);
+    strlcpy(editLabelAttrib[2].label2, " ", 9);
+    strlcpy(editLabelAttrib[3].label2, " ", 9);
+    strlcpy(editLabelAttrib[4].label2, " ", 9);
+    strlcpy(editLabelAttrib[5].label2, " ", 9);
+    strlcpy(editLabelAttrib[6].label2, " ", 9);
+    strlcpy(editLabelAttrib[7].label2, " ", 9);
+    strlcpy(editLabelAttrib[8].label2, " ", 9);
+
+    for (size_t i = 0; i < 9; i++)
+    {
+        editLabelAttrib[i].color = 0;
+    }
+}
+
+void setBankLabelAttributes(const Bank* bank)
+{
+    strlcpy(editLabelAttrib[0].label1, "  EXIT",9);
+    strlcpy(editLabelAttrib[1].label1, "", 9);
+    strlcpy(editLabelAttrib[2].label1, "", 9);
+    strlcpy(editLabelAttrib[3].label1, "  NAME", 9);
+    strlcpy(editLabelAttrib[4].label1, " PC CH", 9);
+    strlcpy(editLabelAttrib[5].label1, " PC NBR", 9);
+    strlcpy(editLabelAttrib[6].label1, "", 9);
+    strlcpy(editLabelAttrib[7].label1, "", 9);
+    strlcpy(editLabelAttrib[8].label1, "", 9);
+
+    uint8_t moveSpaces = 6;
+    uint8_t maxLength = 3;
+
+    itoa(bank->pcMessage.channel, editLabelAttrib[4].label2, 10);
+    itoa(bank->pcMessage.valueOn, editLabelAttrib[5].label2, 10);
+    for (int i = moveSpaces + maxLength - 1; i >= 0 ; i--)
+    {
+        if (i > moveSpaces - 1)
+        {
+            editLabelAttrib[4].label2[i] = editLabelAttrib[4].label2[i - moveSpaces];
+            editLabelAttrib[5].label2[i] = editLabelAttrib[5].label2[i - moveSpaces];
+        }
+        else
+        {
+            editLabelAttrib[4].label2[i] = ' ';
+            editLabelAttrib[5].label2[i] = ' ';
+        }  
+    }
+    
+    for (size_t i = 0; i < 9; i++)
+    {
+        editLabelAttrib[i].color = 0;
+    }
+    
+}
+
+void setButtonLabelAttributes(const Button* button)
+{
+    strlcpy(editLabelAttrib[0].label1, "  EXIT",9);
+    strlcpy(editLabelAttrib[1].label1, "  NAME", 9);
+    strlcpy(editLabelAttrib[2].label1, " PATCH", 9);
+    strlcpy(editLabelAttrib[3].label1, " PC 1-8", 9);
+    strlcpy(editLabelAttrib[4].label1, " PC 9-16", 9);
+    strlcpy(editLabelAttrib[5].label1, " 2. PUSH", 9);
+    strlcpy(editLabelAttrib[6].label1, " CC 1-8", 9);
+    strlcpy(editLabelAttrib[7].label1, " CC 9-16", 9);
+    strlcpy(editLabelAttrib[8].label1, " TOGL ON", 9);
+
+    strlcpy(editLabelAttrib[0].label2, " ", 9);
+    strlcpy(editLabelAttrib[1].label2, " ", 9);
+    strlcpy(editLabelAttrib[2].label2, " ", 9);
+    strlcpy(editLabelAttrib[3].label2, " ", 9);
+    strlcpy(editLabelAttrib[4].label2, " ", 9);
+    strlcpy(editLabelAttrib[5].label2, " ", 9);
+    strlcpy(editLabelAttrib[6].label2, " ", 9);
+    strlcpy(editLabelAttrib[7].label2, " ", 9);
+    strlcpy(editLabelAttrib[8].label2, " ", 9);
+
+    editLabelAttrib[2].color = TFT_RED;
+    if (button->isPatch)
+        editLabelAttrib[2].color = TFT_GREEN;
+    
+    editLabelAttrib[3].color = TFT_RED;
+    for (size_t i = 0; i < NUMBER_OF_MIDI_MSG / 2; i++)
+        if (button->pcMessages[i].channel > 0)
+        {
+            editLabelAttrib[3].color = TFT_GREEN;
+            break;
+        }
+    
+    editLabelAttrib[4].color = TFT_RED;
+    for (size_t i = NUMBER_OF_MIDI_MSG / 2; i < NUMBER_OF_MIDI_MSG; i++)
+        if (button->pcMessages[i].channel > 0)
+        {
+            editLabelAttrib[4].color = TFT_GREEN;
+            break;
+        }
+    
+
+    editLabelAttrib[5].color = TFT_RED;
+    if (button->isSecondPushEnabled)
+        editLabelAttrib[5].color = TFT_GREEN;
+    
+    editLabelAttrib[6].color = TFT_RED;
+    for (size_t i = 0; i < NUMBER_OF_MIDI_MSG / 2; i++)
+        if (button->ccMessages[i].channel > 0)
+        {
+            editLabelAttrib[6].color = TFT_GREEN;
+            break;
+        }
+    
+    editLabelAttrib[7].color = TFT_RED;
+    for (size_t i = NUMBER_OF_MIDI_MSG / 2; i < NUMBER_OF_MIDI_MSG; i++)
+        if (button->ccMessages[i].channel > 0)
+        {
+            editLabelAttrib[7].color = TFT_GREEN;
+            break;
+        }
+    
+    editLabelAttrib[8].color = TFT_RED;
+    if (button->isInitialToggleStateOn)
+        editLabelAttrib[8].color = TFT_GREEN;
+}
+
+void setPc1LabelAttributes(const Button* button)
+{
+    strlcpy(editLabelAttrib[0].label1, "  EXIT", 9);
+    strlcpy(editLabelAttrib[1].label1, " PC #1", 9);
+    strlcpy(editLabelAttrib[2].label1, " PC #2", 9);
+    strlcpy(editLabelAttrib[3].label1, " PC #3", 9);
+    strlcpy(editLabelAttrib[4].label1, " PC #4", 9);
+    strlcpy(editLabelAttrib[5].label1, " PC #5", 9);
+    strlcpy(editLabelAttrib[6].label1, " PC #6", 9);
+    strlcpy(editLabelAttrib[7].label1, " PC #7", 9);
+    strlcpy(editLabelAttrib[8].label1, " PC #8", 9);
+
+    char c[4];
+    strlcpy(editLabelAttrib[0].label2, " ", 20);
+    for (size_t i = 1; i < 9; i++)
+    {
+        strlcpy(editLabelAttrib[i].label2, "         ", 20);
+        if (button->pcMessages[i - 1].channel > 0)
+        {
+            itoa(button->pcMessages[i - 1].channel, c, 10);
+            editLabelAttrib[i].label2[3] = c[0];
+            editLabelAttrib[i].label2[4] = ' ';
+            if (button->pcMessages[i - 1].channel > 9)
+                editLabelAttrib[i].label2[4] = c[1];
+            editLabelAttrib[i].label2[5] = ' ';
+            editLabelAttrib[i].label2[6] = '-';
+            editLabelAttrib[i].label2[7] = ' ';
+            itoa(button->pcMessages[i - 1].valueOn, c, 10);
+            editLabelAttrib[i].label2[8] = c[0];
+            editLabelAttrib[i].label2[9] = ' ';
+            if (button->pcMessages[i - 1].valueOn > 9)
+                editLabelAttrib[i].label2[9] = c[1];
+            editLabelAttrib[i].label2[10] = ' ';
+            if (button->pcMessages[i - 1].valueOn > 99)
+                editLabelAttrib[i].label2[10] = c[2];
+            editLabelAttrib[i].label2[11] = '\0';
+        }
+    }
+
+    for (size_t i = 0; i < 9; i++)
+    {
+        editLabelAttrib[i].color = 0;
+    }
+}
+
+void setPc2LabelAttributes(const Button* button)
+{
+    strlcpy(editLabelAttrib[0].label1, "  EXIT", 9);
+    strlcpy(editLabelAttrib[1].label1, " PC #9", 9);
+    strlcpy(editLabelAttrib[2].label1, " PC #10", 9);
+    strlcpy(editLabelAttrib[3].label1, " PC #11", 9);
+    strlcpy(editLabelAttrib[4].label1, " PC #12", 9);
+    strlcpy(editLabelAttrib[5].label1, " PC #13", 9);
+    strlcpy(editLabelAttrib[6].label1, " PC #14", 9);
+    strlcpy(editLabelAttrib[7].label1, " PC #15", 9);
+    strlcpy(editLabelAttrib[8].label1, " PC #16", 9);
+
+    char c[4];
+    strlcpy(editLabelAttrib[0].label2, " ", 20);
+    for (size_t i = 1; i < 9; i++)
+    {
+        strlcpy(editLabelAttrib[i].label2, "       ", 20);
+        if (button->pcMessages[i - 1 + 8].channel > 0)
+        {
+            itoa(button->pcMessages[i - 1 + 8].channel, c, 10);
+            editLabelAttrib[i].label2[3] = c[0];
+            editLabelAttrib[i].label2[4] = ' ';
+            if (button->pcMessages[i - 1 + 8].channel > 9)
+                editLabelAttrib[i].label2[4] = c[1];
+            editLabelAttrib[i].label2[5] = ' ';
+            editLabelAttrib[i].label2[6] = '-';
+            editLabelAttrib[i].label2[7] = ' ';
+            itoa(button->pcMessages[i - 1 + 8].valueOn, c, 10);
+            editLabelAttrib[i].label2[8] = c[0];
+            editLabelAttrib[i].label2[9] = ' ';
+            if (button->pcMessages[i - 1 + 8].valueOn > 9)
+                editLabelAttrib[i].label2[0] = c[1];
+            editLabelAttrib[i].label2[10] = ' ';
+            if (button->pcMessages[i - 1 + 8].valueOn > 99)
+                editLabelAttrib[i].label2[10] = c[2];
+            editLabelAttrib[i].label2[11] = '\0';
+        }
+    }
+
+    for (size_t i = 0; i < 9; i++)
+    {
+        editLabelAttrib[i].color = 0;
+    }
+}
+
+
+void setCc1LabelAttributes(const Button* button)
+{
+    strlcpy(editLabelAttrib[0].label1, "  EXIT", 9);
+    strlcpy(editLabelAttrib[1].label1, " CC #1", 9);
+    strlcpy(editLabelAttrib[2].label1, " CC #2", 9);
+    strlcpy(editLabelAttrib[3].label1, " CC #3", 9);
+    strlcpy(editLabelAttrib[4].label1, " CC #4", 9);
+    strlcpy(editLabelAttrib[5].label1, " CC #5", 9);
+    strlcpy(editLabelAttrib[6].label1, " CC #6", 9);
+    strlcpy(editLabelAttrib[7].label1, " CC #7", 9);
+    strlcpy(editLabelAttrib[8].label1, " CC #8", 9);
+
+    char c[4];
+    strlcpy(editLabelAttrib[0].label2, " ", 20);
+    for (size_t i = 1; i < 9; i++)
+    {
+        strlcpy(editLabelAttrib[i].label2, " ", 20);
+        if (button->ccMessages[i - 1].channel > 0)
+        {
+            itoa(button->ccMessages[i - 1].channel, c, 10);
+            editLabelAttrib[i].label2[0] = c[0];
+            editLabelAttrib[i].label2[1] = ' ';
+            if (button->ccMessages[i - 1].channel > 9)
+                editLabelAttrib[i].label2[1] = c[1];
+            editLabelAttrib[i].label2[2] = ' '; // Space
+            itoa(button->ccMessages[i - 1].ccNumber, c, 10);
+            editLabelAttrib[i].label2[3] = c[0];
+            editLabelAttrib[i].label2[4] = ' ';
+            if (button->ccMessages[i - 1].ccNumber > 9)
+                editLabelAttrib[i].label2[4] = c[1];
+            editLabelAttrib[i].label2[5] = ' ';
+            if (button->ccMessages[i - 1].ccNumber > 99)
+                editLabelAttrib[i].label2[5] = c[2];
+            editLabelAttrib[i].label2[6] = ' '; // Space
+            itoa(button->ccMessages[i - 1].minValue, c, 10);
+            editLabelAttrib[i].label2[7] = c[0];
+            editLabelAttrib[i].label2[8] = ' ';
+            if (button->ccMessages[i - 1].minValue > 9)
+                editLabelAttrib[i].label2[8] = c[1];
+            editLabelAttrib[i].label2[9] = ' ';
+            if (button->ccMessages[i - 1].minValue > 99)
+                editLabelAttrib[i].label2[9] = c[2];
+            editLabelAttrib[i].label2[10] = ' '; // Space
+            itoa(button->ccMessages[i - 1].maxValue, c, 10);
+            editLabelAttrib[i].label2[11] = c[0];
+            editLabelAttrib[i].label2[12] = ' ';
+            if (button->ccMessages[i - 1].maxValue > 9)
+                editLabelAttrib[i].label2[12] = c[1];
+            editLabelAttrib[i].label2[13] = ' ';
+            if (button->ccMessages[i - 1].maxValue > 99)
+                editLabelAttrib[i].label2[13] = c[2];
+            
+            editLabelAttrib[i].label2[14] = '\0';
+        }
+    }
+
+    for (size_t i = 0; i < 9; i++)
+    {
+        editLabelAttrib[i].color = 0;
+    }
+}
+
+void setCc2LabelAttributes(const Button* button)
+{
+    strlcpy(editLabelAttrib[0].label1, "  EXIT", 9);
+    strlcpy(editLabelAttrib[1].label1, " CC #9", 9);
+    strlcpy(editLabelAttrib[2].label1, " CC #10", 9);
+    strlcpy(editLabelAttrib[3].label1, " CC #11", 9);
+    strlcpy(editLabelAttrib[4].label1, " CC #12", 9);
+    strlcpy(editLabelAttrib[5].label1, " CC #13", 9);
+    strlcpy(editLabelAttrib[6].label1, " CC #14", 9);
+    strlcpy(editLabelAttrib[7].label1, " CC #15", 9);
+    strlcpy(editLabelAttrib[8].label1, " CC #16", 9);
+
+    char c[4];
+    strlcpy(editLabelAttrib[0].label2, " ", 20);
+    for (size_t i = 1; i < 9; i++)
+    {
+        strlcpy(editLabelAttrib[i].label2, " ", 20);
+        if (button->ccMessages[i - 1].channel > 0)
+        {
+            itoa(button->ccMessages[i - 1 + 8].channel, c, 10);
+            editLabelAttrib[i].label2[0] = c[0];
+            editLabelAttrib[i].label2[1] = ' ';
+            if (button->ccMessages[i - 1 + 8].channel > 9)
+                editLabelAttrib[i].label2[1] = c[1];
+            editLabelAttrib[i].label2[2] = ' '; // Space
+            itoa(button->ccMessages[i - 1 + 8].ccNumber, c, 10);
+            editLabelAttrib[i].label2[3] = c[0];
+            editLabelAttrib[i].label2[4] = ' ';
+            if (button->ccMessages[i - 1 + 8].ccNumber > 9)
+                editLabelAttrib[i].label2[4] = c[1];
+            editLabelAttrib[i].label2[5] = ' ';
+            if (button->ccMessages[i - 1 + 8].ccNumber > 99)
+                editLabelAttrib[i].label2[5] = c[2];
+            editLabelAttrib[i].label2[6] = ' '; // Space
+            itoa(button->ccMessages[i - 1 + 8].minValue, c, 10);
+            editLabelAttrib[i].label2[7] = c[0];
+            editLabelAttrib[i].label2[8] = ' ';
+            if (button->ccMessages[i - 1 + 8].minValue > 9)
+                editLabelAttrib[i].label2[8] = c[1];
+            editLabelAttrib[i].label2[9] = ' ';
+            if (button->ccMessages[i - 1 + 8].minValue > 99)
+                editLabelAttrib[i].label2[9] = c[2];
+            editLabelAttrib[i].label2[10] = ' '; // Space
+            itoa(button->ccMessages[i - 1 + 8].maxValue, c, 10);
+            editLabelAttrib[i].label2[11] = c[0];
+            editLabelAttrib[i].label2[12] = ' ';
+            if (button->ccMessages[i - 1 + 8].maxValue > 9)
+                editLabelAttrib[i].label2[12] = c[1];
+            editLabelAttrib[i].label2[13] = ' ';
+            if (button->ccMessages[i - 1 + 8].maxValue > 99)
+                editLabelAttrib[i].label2[13] = c[2];
+            
+            editLabelAttrib[i].label2[14] = '\0';
+        }
+    }
+
+    for (size_t i = 0; i < 9; i++)
+    {
+        editLabelAttrib[i].color = 0;
+    }
+}
+
+void setPcDetailLabelAttributes(const PcMsg* msg)
+{
+    strlcpy(editLabelAttrib[0].label1, "  EXIT", 9);
+    strlcpy(editLabelAttrib[1].label1, " PC CH", 9);
+    strlcpy(editLabelAttrib[2].label1, " PC NBR", 9);
+    strlcpy(editLabelAttrib[3].label1, " ", 9);
+    strlcpy(editLabelAttrib[4].label1, " ", 9);
+    strlcpy(editLabelAttrib[5].label1, " ", 9);
+    strlcpy(editLabelAttrib[6].label1, " ", 9);
+    strlcpy(editLabelAttrib[7].label1, " ", 9);
+    strlcpy(editLabelAttrib[8].label1, " ", 9);
+
+    for (size_t i = 0; i < 9; i++)
+        strlcpy(editLabelAttrib[i].label2, "          ", 20);
+
+    char c[4];
+    if (msg->channel > 0)
+    {
+        itoa(msg->channel, c, 10);
+        editLabelAttrib[1].label2[5] = c[0];
+        editLabelAttrib[1].label2[6] = c[1];
+        editLabelAttrib[1].label2[7] = c[2];
+    }
+    if (msg->valueOn > 0)
+    {
+        itoa(msg->valueOn, c, 10);
+        editLabelAttrib[2].label2[5] = c[0];
+        editLabelAttrib[2].label2[6] = c[1];
+        editLabelAttrib[2].label2[7] = c[2];
+        editLabelAttrib[2].label2[8] = c[3];
+    }    
+    
+    for (size_t i = 0; i < 9; i++)
+    {
+        editLabelAttrib[i].color = 0;
+    }
+}
+
+void setCcDetailLabelAttributes(const CcMsg* msg)
+{
+    strlcpy(editLabelAttrib[0].label1, "  EXIT", 9);
+    strlcpy(editLabelAttrib[1].label1, " CC CH", 9);
+    strlcpy(editLabelAttrib[2].label1, " CC NBR", 9);
+    strlcpy(editLabelAttrib[3].label1, " ", 9);
+    strlcpy(editLabelAttrib[4].label1, "MIN VAL", 9);
+    strlcpy(editLabelAttrib[5].label1, "MAX VAL", 9);
+    strlcpy(editLabelAttrib[6].label1, " ", 9);
+    strlcpy(editLabelAttrib[7].label1, " ", 9);
+    strlcpy(editLabelAttrib[8].label1, " ", 9);
+
+    for (size_t i = 0; i < 9; i++)
+        strlcpy(editLabelAttrib[i].label2, "          ", 20);
+
+    char c[4];
+    if (msg->channel > 0)
+    {
+        itoa(msg->channel, c, 10);
+        editLabelAttrib[1].label2[5] = c[0];
+        editLabelAttrib[1].label2[6] = c[1];
+        editLabelAttrib[1].label2[7] = c[2];
+    
+        itoa(msg->ccNumber, c, 10);
+        editLabelAttrib[2].label2[5] = c[0];
+        editLabelAttrib[2].label2[6] = c[1];
+        editLabelAttrib[2].label2[7] = c[2];
+        editLabelAttrib[2].label2[8] = c[3];
+    
+        itoa(msg->minValue, c, 10);
+        editLabelAttrib[4].label2[5] = c[0];
+        editLabelAttrib[4].label2[6] = c[1];
+        editLabelAttrib[4].label2[7] = c[2];
+        editLabelAttrib[4].label2[8] = c[3];
+    
+        itoa(msg->maxValue, c, 10);
+        editLabelAttrib[5].label2[5] = c[0];
+        editLabelAttrib[5].label2[6] = c[1];
+        editLabelAttrib[5].label2[7] = c[2];
+        editLabelAttrib[5].label2[8] = c[3];
+    }    
+
+    for (size_t i = 0; i < 9; i++)
+    {
+        editLabelAttrib[i].color = 0;
+    }
 }

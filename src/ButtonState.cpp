@@ -93,10 +93,11 @@ void ButtonState::determineState()
     }
 }
 
+
+
 bool ButtonState::isBankDownState()
 {
     determineState();
-    // bool result = state == 3; //result = (state == 3 && buttons[0]->isPressed() && buttons[1]->isPressed());
     if (state == 3)
     {
         state = 6;
@@ -108,7 +109,7 @@ bool ButtonState::isBankDownState()
 bool ButtonState::isBankUpState()
 {
     determineState();
-    if (state == 4) // (state == 3 && buttons[1]->isPressed() && buttons[2]->isPressed());
+    if (state == 4) 
     {
         state = 6;
         return true;
@@ -117,15 +118,19 @@ bool ButtonState::isBankUpState()
     return false;
 }
 
-byte ButtonState::getSingleButtonPressed()
+byte ButtonState::getSingleButtonPressed(bool resetState)
 {
     determineState();
+
     if (state == 2)
     {
         state = 6;
         return getButtonPressed();
     }
-
+    
+    if (resetState && state > 2) // Used after bank change to force two pushes of the same button before sending patch midi data
+        state = 6;
+     
     return 0;
 }
 

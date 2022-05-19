@@ -36,9 +36,6 @@ void MidiCtrlData::initialize()
 {
     for (int i = 0; i < NUMBER_OF_BANKS; i++)
     {
-        // char bankname[BANK_NAME_LENGTH + 1] = "BANK ";
-        // itoa(i, bankname + strlen(bankname), 10);
-        // strcpy(banks[i].name, bankname);
         strcpy(banks[i].name, "BANK");
         banks[i].pcMessage.channel  = 0;
         banks[i].pcMessage.valueOn  = 0;
@@ -47,7 +44,7 @@ void MidiCtrlData::initialize()
         {
             strcpy(banks[i].buttons[j].name, "PATCH");
             banks[i].buttons[j].isPatch                = true;
-            banks[i].buttons[j].isSecondPushEnabled    = false;
+            banks[i].buttons[j].isSecondPushEnabled    = true;
             banks[i].buttons[j].isInitialToggleStateOn = false;
             for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
             {

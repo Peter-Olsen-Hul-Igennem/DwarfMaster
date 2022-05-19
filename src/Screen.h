@@ -1,12 +1,19 @@
 #ifndef DWARFMASTER_SCREEN_H
 #define DWARFMASTER_SCREEN_H
 
+#include <TouchScreen.h>
 #include "GlobalConst.h"
 #include "Touch.h"
 #include "TouchKeyboard.h"
 #include <Arduino.h>
 #include <MCUFRIEND_kbv.h>
-#include <TouchScreen.h>
+
+struct EditLabelAttributes
+{
+    char label1[10];
+    char label2[20];
+    uint16_t color; 
+};
 
 class Screen
 {
@@ -14,15 +21,16 @@ class Screen
     Screen();
     void blankScreen();
     void drawPlayBank(const char* bnkNbr, const char* bnkName, const bool inverted = false);
-    void drawPlayButton(const uint8_t btnNbr, const bool patch, const bool selectedPatch, const bool btnStateFirst, const char* btnLabel);
+    void drawPlayButton(const uint8_t btnNbr, const bool patch, const bool selectedPatch, const bool btnStateFirst, const char* btnLabel, bool invertSelected = false);
     bool playBankPressed();
 
     int getButtonPushed();
     void waitForButtonReleased();
     void drawEdit(const char* label, const char** btnLabels);
+    void drawEdit(const char* label, const EditLabelAttributes* btnLabels);
     
     String getKeyboardInputFromUser(const String* contextLabel, const String* oldText, const byte maxLength);
-    uint8_t getNumKeyboardInputFromUser(const String* contextLabel, const String* oldVal, const byte maxLength);
+    uint16_t getNumKeyboardInputFromUser(const String* contextLabel, const String* oldVal, const byte maxLength);
     bool getBinaryInputFromUser(const char* label1, const char* label2, const bool firstIsTrue);
     
 
@@ -32,6 +40,7 @@ class Screen
     void drawEditGrid();
     void printEditLabel(const char* label);
     void printEditButtonLabels(const char** labels);
+    void printEditButtonLabels(const EditLabelAttributes* labels);
     void drawBinaryEdit(const char* label1, const char* label2, bool firstIsTrue);
     uint8_t mapPointToBtn(Point point);
 

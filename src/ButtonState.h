@@ -11,7 +11,7 @@ class ButtonState
 
     bool isBankDownState();
     bool isBankUpState();
-    byte getSingleButtonPressed();
+    byte getSingleButtonPressed(bool resetState = false);
 
  private:
     ButtonState(); // Singleton
@@ -25,6 +25,8 @@ class ButtonState
     unsigned long lastTime         = 0;
     const unsigned long stateDelay = 50;
     const byte FIRST_PIN_NBR       = 33;
+    byte bankChangeButtonPressed   = 0;
+    byte testState = 0;
 };
 
 #endif
