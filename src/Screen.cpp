@@ -21,6 +21,30 @@ void Screen::blankScreen()
     tft.fillScreen(TFT_BLACK);
 }
 
+void Screen::showMessage(const char* msg)
+{
+    tft.fillScreen(BACKGROUND_COLOR);
+    tft.setTextColor(TFT_BLACK);
+    tft.setTextSize(3);
+    tft.setCursor(10, 45);
+    tft.print(String(msg));
+
+    Point p;
+    ButtonState* btnState = btnState->getInstance();
+    while (true)
+    {
+        p = touch.getTouchPoint();
+        if (p.pressed)
+        {
+            return;
+        }
+        if (btnState->getSingleButtonPressed() == 1) // Footswitch 1: cancel
+        {
+            return;
+        }
+    }
+}
+
 void Screen::drawPlayButton(const uint8_t btnNbr, const bool patch, const bool selectedPatch, const bool btnStateFirst, const char* btnLabel, bool invertSelected)
 {
     uint16_t bgColor  = TFT_LIGHTGREY;
@@ -158,14 +182,6 @@ bool Screen::playBankPressed()
     return false;
 }
 
-void Screen::drawEdit(const char* label, const char** btnLabels)
-{
-    drawEditGrid();
-    printEditLabel(label);
-    printEditButtonLabels(btnLabels);
-}
-
-
 void Screen::drawEdit(const char* label, const EditLabelAttributes* btnLabels)
 {
     drawEditGrid();
@@ -244,27 +260,6 @@ void Screen::printEditLabel(const char* label)
     tft.setTextColor(TFT_BLACK);
     tft.setTextSize(4);
     tft.print(String(label));
-}
-
-void Screen::printEditButtonLabels(const char** labels)
-{
-    tft.setTextColor(TFT_BLACK);
-    tft.setTextSize(2);
-    byte cnt = 0;
-    int y    = 0;
-    int x    = 0;
-    for (int j = 1; j < 4; j++)
-    {
-        y = 25 + (Y_SIZE * j);
-        for (int i = 0; i < 3; i++)
-        {
-            x = 7 + (X_SIZE * i);
-            tft.fillRect(x, y, 95, 35, BACKGROUND_COLOR);
-            tft.setCursor(x, y);
-            tft.print(labels[cnt]);
-            cnt++;
-        }
-    }
 }
 
 void Screen::printEditButtonLabels(const EditLabelAttributes* labels)

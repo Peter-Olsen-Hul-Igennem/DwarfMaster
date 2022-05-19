@@ -48,9 +48,16 @@ class MidiCtrlData
     MidiCtrlData(const char* dataVersion);
     Bank* getBank(const byte bankNbr);
     void saveBank(const byte bankNbr);
+    void resetBank(const byte bankNbr);
+    void copyBank(const byte bankNbrFrom, const byte bankNbrTo);
+    void resetButton(const byte bankNbr, const byte buttonNbr); // This buttonNbr is 0 based
+    void copyButton(const byte bankNbrFrom, const byte buttonNbrFrom, const byte bankNbrTo, const byte buttonNbrTo); // This buttonNbrs are 0 based
 
  private:
     void initialize();
+    void initializeBank(const byte bankNbr);
+    void initializeButton(const byte bankNbr, const byte buttonNbr);
+    void copyButtonData(const byte bankNbrFrom, const byte buttonNbrFrom, const byte bankNbrTo, const byte buttonNbrTo);
     void deserialize();
     void deserializeBank(const int id);
     void serialize();

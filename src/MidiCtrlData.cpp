@@ -32,33 +32,95 @@ void MidiCtrlData::saveBank(const byte bankNbr)
     serializeBank(bankNbr);
 }
 
+void MidiCtrlData::resetBank(const byte bankNbr)
+{
+    initializeBank(bankNbr);
+    serializeBank(bankNbr);
+}
+
+void MidiCtrlData::copyBank(const byte bankNbrFrom, const byte bankNbrTo)
+{
+    strcpy(banks[bankNbrTo].name, banks[bankNbrFrom].name);
+    banks[bankNbrTo].pcMessage.channel  = banks[bankNbrFrom].pcMessage.channel;
+    banks[bankNbrTo].pcMessage.valueOn  = banks[bankNbrFrom].pcMessage.valueOn;
+    banks[bankNbrTo].pcMessage.valueOff = banks[bankNbrFrom].pcMessage.valueOff;
+    for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
+    {
+        copyButtonData(bankNbrFrom, j, bankNbrTo, j);
+    }
+    
+    serializeBank(bankNbrTo);
+}
+
+
+void MidiCtrlData::resetButton(const byte bankNbr, const byte buttonNbr)
+{
+    initializeButton(bankNbr, buttonNbr);
+    serializeBank(bankNbr);
+}
+
+void MidiCtrlData::copyButton(const byte bankNbrFrom, const byte buttonNbrFrom, const byte bankNbrTo, const byte buttonNbrTo)
+{
+    copyButtonData(bankNbrFrom, buttonNbrFrom, bankNbrTo, buttonNbrTo);
+    serializeBank(bankNbrTo);
+}
+
+void MidiCtrlData::copyButtonData(const byte bankNbrFrom, const byte buttonNbrFrom, const byte bankNbrTo, const byte buttonNbrTo)
+{
+    strcpy(banks[bankNbrTo].buttons[buttonNbrTo].name, banks[bankNbrFrom].buttons[buttonNbrFrom].name);
+    banks[bankNbrTo].buttons[buttonNbrTo].isPatch                = banks[bankNbrFrom].buttons[buttonNbrFrom].isPatch;
+    banks[bankNbrTo].buttons[buttonNbrTo].isSecondPushEnabled    = banks[bankNbrFrom].buttons[buttonNbrFrom].isSecondPushEnabled;
+    banks[bankNbrTo].buttons[buttonNbrTo].isInitialToggleStateOn = banks[bankNbrFrom].buttons[buttonNbrFrom].isInitialToggleStateOn;
+    for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
+    {
+        banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].channel  = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].channel;
+        banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].valueOn  = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].valueOn;
+        banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].valueOff = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].valueOff;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].channel  = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].channel;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].ccNumber = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].ccNumber;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].minValue = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].minValue;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].maxValue = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].maxValue;
+    }
+}
+
 void MidiCtrlData::initialize()
 {
     for (int i = 0; i < NUMBER_OF_BANKS; i++)
     {
-        strcpy(banks[i].name, "BANK");
-        banks[i].pcMessage.channel  = 0;
-        banks[i].pcMessage.valueOn  = 0;
-        banks[i].pcMessage.valueOff = 0;
-        for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
-        {
-            strcpy(banks[i].buttons[j].name, "PATCH");
-            banks[i].buttons[j].isPatch                = true;
-            banks[i].buttons[j].isSecondPushEnabled    = true;
-            banks[i].buttons[j].isInitialToggleStateOn = false;
-            for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
-            {
-                banks[i].buttons[j].pcMessages[k].channel  = 0;
-                banks[i].buttons[j].pcMessages[k].valueOn  = 0;
-                banks[i].buttons[j].pcMessages[k].valueOff = 0;
-                banks[i].buttons[j].ccMessages[k].channel  = 0;
-                banks[i].buttons[j].ccMessages[k].ccNumber = 0;
-                banks[i].buttons[j].ccMessages[k].minValue = 0;
-                banks[i].buttons[j].ccMessages[k].maxValue = 0;
-            }
-        }
+        initializeBank(i);
     }
     serialize();
+}    
+
+void MidiCtrlData::initializeBank(const byte bankNbr)
+{
+
+    strcpy(banks[bankNbr].name, "BANK");
+    banks[bankNbr].pcMessage.channel  = 0;
+    banks[bankNbr].pcMessage.valueOn  = 0;
+    banks[bankNbr].pcMessage.valueOff = 0;
+    for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
+    {
+        initializeButton(bankNbr, j);
+    }
+}
+
+void MidiCtrlData::initializeButton(const byte bankNbr, const byte buttonNbr)
+{
+    strcpy(banks[bankNbr].buttons[buttonNbr].name, "PATCH");
+    banks[bankNbr].buttons[buttonNbr].isPatch                = true;
+    banks[bankNbr].buttons[buttonNbr].isSecondPushEnabled    = true;
+    banks[bankNbr].buttons[buttonNbr].isInitialToggleStateOn = false;
+    for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
+    {
+        banks[bankNbr].buttons[buttonNbr].pcMessages[k].channel  = 0;
+        banks[bankNbr].buttons[buttonNbr].pcMessages[k].valueOn  = 0;
+        banks[bankNbr].buttons[buttonNbr].pcMessages[k].valueOff = 0;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].channel  = 0;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].ccNumber = 0;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].minValue = 0;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].maxValue = 0;
+    }
 }
 
 void MidiCtrlData::deserialize()
