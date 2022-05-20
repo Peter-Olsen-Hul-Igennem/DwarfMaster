@@ -10,7 +10,6 @@ TouchKeyboard::TouchKeyboard(MCUFRIEND_kbv* tft, Touch* touch, bool fullAlpha)
 
 String TouchKeyboard::getInputFromUser(const String* contextLabel, const String* oldText, const byte maxLength)
 {
-    Serial.println(maxLength);
     char tempText[maxLength + 1];
     oldText->toCharArray(tempText, sizeof tempText);
 

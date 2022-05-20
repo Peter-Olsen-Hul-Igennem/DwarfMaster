@@ -16,6 +16,35 @@ Screen::Screen()
     tft.print("MASTER");
 }
 
+void Screen::showWaitScreen()
+{
+    tft.fillScreen(TFT_BLACK);
+
+    tft.setTextColor(TFT_DARKGREY);
+    tft.setTextSize(3);
+    tft.setCursor(20, 50);
+    tft.print("PRESS A BUTTON");
+    tft.setCursor(20, 100);
+    tft.print("WHEN THE DWARF"); 
+    tft.setCursor(20, 150);
+    tft.print("IS READY!");
+
+    Point p;
+    ButtonState* btnState = btnState->getInstance();
+    while (true)
+    {
+        p = touch.getTouchPoint();
+        if (p.pressed)
+        {
+            return;
+        }
+        if (btnState->getSingleButtonPressed() > 0) 
+        {
+            return;
+        }
+    }
+}
+
 void Screen::blankScreen()
 {
     tft.fillScreen(TFT_BLACK);
@@ -358,14 +387,6 @@ uint8_t Screen::mapPointToBtn(Point point)
 
     uint8_t x = point.x / X_SIZE + 1;
     uint8_t y = point.y / Y_SIZE - 1;
-/*Serial.print(point.x);
-    Serial.print(" - ");
-    Serial.print(x);
-    Serial.print(" | ");
-    Serial.print(point.y);
-    Serial.print(" - ");
-    Serial.println(y);
-    
-    Serial.println(x + (3 * y));*/
+
     return x + (3 * y);
 }

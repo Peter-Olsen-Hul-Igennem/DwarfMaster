@@ -21,6 +21,7 @@ class Screen
 {
  public:
     Screen();
+    void showWaitScreen();
     void blankScreen();
     void showMessage(const char* msg);
     void drawPlayBank(const char* bnkNbr, const char* bnkName, const bool inverted = false);
