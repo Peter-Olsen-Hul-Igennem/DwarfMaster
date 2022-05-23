@@ -1,5 +1,4 @@
 #include "ButtonState.h"
-#include "Edit.h"
 #include "GlobalConst.h"
 #include "MidiCtrlData.h"
 #include "Screen.h"
@@ -7,13 +6,23 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 
-const char* DATA_VERSION        = "0.4";
-const int DATA_STATE_EEPROM_ADR = 0;
+enum CtrlState { PLAY,
+                 PLAY_BANK_UP,
+                 PLAY_BANK_DOWN,
+                 EDIT };
+CtrlState ctrlState = PLAY;
+
+enum BtnPushState { VERY_FIRST_BTN_PUSH,
+                    FIRST_BTN_PUSH,
+                    SECOND_BTN_PUSH };
 
 enum PcCcEnum { PC_1_8,
                 PC_9_16,
                 CC_1_8,
                 CC_9_16 };
+
+const uint16_t DATA_STATE_EEPROM_ADR = 0;
+const uint8_t EXP_PIN                = 19;
 
 void setup();
 void loop();
@@ -24,7 +33,8 @@ void drawPlayScreen();
 void drawPlayBtns(const Bank* bank, const bool overrideSelected, const bool invertSelected = false);
 void drawPlayBank(const int bnkNbr, const Bank* bank, const bool inverted);
 void sendBankMidi(Bank* bank);
-void sendButtonMidi(Button button, bool stateFirst);
+void sendButtonMidi(Button button, BtnPushState btnState);
+void sendExpressionMidi(Bank* bank);
 
 void editMode();
 void doEditUtility(Bank* bank);
@@ -36,7 +46,7 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
 void loadDataStateInfo();
 void saveDataStateInfo();
 void bankNumToChar(uint8_t num, char* buf);
-void resetToggleStates();
+void initHousekeepingVariables();
 
 void setMainLabelAttributes();
 void setUtilityLabelAttributes();
@@ -59,17 +69,13 @@ struct DataState
 {
     uint8_t bnk;
     uint8_t btn;
-    uint8_t btnStateFirst;
+    // uint8_t btnStateFirst;
+    BtnPushState btnPushState = VERY_FIRST_BTN_PUSH;
 };
 DataState dataState;
 
-bool toggleStates[NUMBER_OF_BUTTONS];
-
-enum CtrlState { PLAY,
-                 PLAY_BANK_UP,
-                 PLAY_BANK_DOWN,
-                 EDIT };
-CtrlState ctrlState = PLAY;
+bool toggleStates[NUMBER_OF_BUTTONS]; // Keeping track of the states of the toggle switches (buttons not set up to be patches). True is ON.
+uint8_t prevExpValue = 128;           // Range is 0-127 so initialising with 128 garanties that the read value is different.
 
 void setup()
 {
@@ -77,15 +83,15 @@ void setup()
     //    delay(1000);
 
     loadDataStateInfo();
-    mcd = new MidiCtrlData(DATA_VERSION);
+    mcd = new MidiCtrlData();
 
-    resetToggleStates();
+    initHousekeepingVariables();
 
     screen.showWaitScreen();
 
     Bank* bank = mcd->getBank(dataState.bnk);
-    sendButtonMidi(bank->buttons[dataState.btn - 1], dataState.btnStateFirst);
-    
+    sendButtonMidi(bank->buttons[dataState.btn - 1], dataState.btnPushState);
+
     drawPlayScreen();
 }
 
@@ -144,34 +150,48 @@ void loop()
 
 void playMode()
 {
+    Bank* bank = mcd->getBank(dataState.bnk);
     byte btnNbr = btnState->getSingleButtonPressed();
     if (btnNbr > 0)
     {
-        Bank* bank = mcd->getBank(dataState.bnk);
         if (bank->buttons[btnNbr - 1].isPatch)
         {
-            if (btnNbr == dataState.btn && dataState.btnStateFirst == true)
+            if (btnNbr == dataState.btn)
             {
-                if (bank->buttons[btnNbr - 1].isSecondPushEnabled)
-                    dataState.btnStateFirst = false;
+                switch (dataState.btnPushState)
+                {
+                    case VERY_FIRST_BTN_PUSH:
+                    case FIRST_BTN_PUSH:
+                        if (bank->buttons[btnNbr - 1].isSecondPushEnabled)
+                            dataState.btnPushState = SECOND_BTN_PUSH;
+                        break;
+
+                    case SECOND_BTN_PUSH:
+                        dataState.btnPushState = FIRST_BTN_PUSH;
+                        break;
+                }
             }
             else
             {
-                dataState.btnStateFirst = true;
+                dataState.btnPushState = VERY_FIRST_BTN_PUSH;
             }
 
-            sendButtonMidi(bank->buttons[btnNbr - 1], dataState.btnStateFirst);
+            sendButtonMidi(bank->buttons[btnNbr - 1], dataState.btnPushState);
             dataState.btn = btnNbr;
             saveDataStateInfo();
         }
         else
         {
             toggleStates[btnNbr - 1] = !toggleStates[btnNbr - 1];
-            sendButtonMidi(bank->buttons[btnNbr - 1], toggleStates[btnNbr - 1]);
+            if (toggleStates[btnNbr - 1])
+                sendButtonMidi(bank->buttons[btnNbr - 1], FIRST_BTN_PUSH);
+            else
+                sendButtonMidi(bank->buttons[btnNbr - 1], SECOND_BTN_PUSH);
         }
 
         drawPlayBtns(bank, false);
     }
+    sendExpressionMidi(bank);
 }
 
 void bankChange(bool up)
@@ -219,11 +239,11 @@ void bankChange(bool up)
         {
             sendBankMidi(bank);
 
-            dataState.bnk           = tmpBankNbr;
-            dataState.btn           = btnNbr1;
-            dataState.btnStateFirst = true;
+            dataState.bnk          = tmpBankNbr;
+            dataState.btn          = btnNbr1;
+            dataState.btnPushState = VERY_FIRST_BTN_PUSH;
             saveDataStateInfo();
-            resetToggleStates();
+            initHousekeepingVariables();
 
             bBlink = true;
             while (true)
@@ -242,7 +262,7 @@ void bankChange(bool up)
                 }
             }
 
-            sendButtonMidi(bank->buttons[btnNbr1 - 1], dataState.btnStateFirst);
+            sendButtonMidi(bank->buttons[btnNbr1 - 1], dataState.btnPushState);
 
             drawPlayScreen();
 
@@ -272,7 +292,7 @@ void drawPlayBtns(const Bank* bank, const bool overrideSelected, const bool inve
             selected = curPatch == i + 1; // Blue color patch
         if (bank->buttons[i].isPatch)
         {
-            if (selected && !dataState.btnStateFirst)
+            if (selected && dataState.btnPushState == SECOND_BTN_PUSH)
                 primaryFunc = false; // Red color patch
         }
         else
@@ -299,34 +319,86 @@ void sendBankMidi(Bank* bank)
     }
 }
 
-void sendButtonMidi(Button button, bool stateFirst)
+void sendButtonMidi(Button button, BtnPushState btnState)
 {
-    uint8_t val;
     for (uint8_t i = 0; i < NUMBER_OF_MIDI_MSG; i++)
     {
         if (button.pcMessages[i].channel > 0)
         {
-            if (stateFirst)
-                val = button.pcMessages[i].valueOn;
-            else if (!button.isPatch || button.isSecondPushEnabled) // Toggle or secondPushEnabled
-                val = button.pcMessages[i].valueOff;
+            switch (btnState)
+            {
+                case VERY_FIRST_BTN_PUSH:
+                    usbMIDI.sendProgramChange(button.pcMessages[i].valueOn, button.pcMessages[i].channel);
+                    break;
 
-            usbMIDI.sendProgramChange(val, button.pcMessages[i].channel);
+                case FIRST_BTN_PUSH:
+                    if (button.pcMessages[i].valueOn != button.pcMessages[i].valueOff) // If the On and Off values are the same, the PC is not (re)sent.
+                        usbMIDI.sendProgramChange(button.pcMessages[i].valueOn, button.pcMessages[i].channel);
+
+                    break;
+
+                case SECOND_BTN_PUSH:
+                    if (!button.isPatch || button.isSecondPushEnabled)                     // Toggle or secondPushEnabled
+                        if (button.pcMessages[i].valueOn != button.pcMessages[i].valueOff) // If the On and Off values are the same, the PC is not (re)sent.
+                            usbMIDI.sendProgramChange(button.pcMessages[i].valueOff, button.pcMessages[i].channel);
+
+                    break;
+            }
         }
     }
 
     for (uint8_t i = 0; i < NUMBER_OF_MIDI_MSG; i++)
     {
-        if (button.ccMessages[i].channel > 0)
+        if (button.ccMessages[i].channel > 0 && !button.ccMessages[i].ctrlByExp) // Midichannel == 0: Disabled. CtrlByExp: Controlled continously by expression pedal
         {
-            if (stateFirst)
-                val = button.ccMessages[i].minValue;
-            else
-                val = button.ccMessages[i].maxValue;
+            switch (btnState)
+            {
+                case VERY_FIRST_BTN_PUSH:
+                case FIRST_BTN_PUSH:
+                    usbMIDI.sendControlChange(button.ccMessages[i].ccNumber, button.ccMessages[i].minValue, button.ccMessages[i].channel);
+                    break;
 
-            if (stateFirst || !button.isPatch || (button.isPatch && button.isSecondPushEnabled))
-                // First button push - or - button is a toggle - or - second putton push with secondPushEnabled
-                usbMIDI.sendControlChange(button.ccMessages[i].ccNumber, val, button.ccMessages[i].channel);
+                case SECOND_BTN_PUSH:
+                    if (!button.isPatch || button.isSecondPushEnabled)
+                    {
+                        if (button.ccMessages[i].useMaxValAsCcNbr)
+                        {
+                            usbMIDI.sendControlChange(button.ccMessages[i].maxValue, 0, button.ccMessages[i].channel);
+                        }
+                        else
+                        {
+                            usbMIDI.sendControlChange(button.ccMessages[i].ccNumber, button.ccMessages[i].maxValue, button.ccMessages[i].channel);
+                        }
+                    }
+
+                    break;
+            }
+        }
+    }
+}
+
+void sendExpressionMidi(Bank* bank)
+{
+    int expVal = map(analogRead(EXP_PIN), 0, 1013, 0, 127);
+    expVal     = constrain(expVal, 0, 127);
+    if (expVal == prevExpValue)
+        return;
+
+    prevExpValue = expVal;
+
+    uint8_t mappedValue;
+    for (uint8_t i = 0; i < NUMBER_OF_BUTTONS; i++)
+    {
+        if ((!bank->buttons[i].isPatch && toggleStates[i]) || i + 1 == dataState.btn) // Button is a toggle that is on, or the currently selected patch
+        {
+            for (uint8_t j = 0; j < NUMBER_OF_MIDI_MSG; j++)
+            {
+                if (bank->buttons[i].ccMessages[j].ctrlByExp)
+                {
+                    mappedValue = map(expVal, 0, 127, bank->buttons[i].ccMessages[j].minValue, bank->buttons[i].ccMessages[j].maxValue);
+                    usbMIDI.sendControlChange(bank->buttons[i].ccMessages[j].ccNumber, mappedValue, bank->buttons[i].ccMessages[j].channel);
+                }
+            }
         }
     }
 }
@@ -534,10 +606,9 @@ void doEditUtility(Bank* bank)
                 }
                 break;
             }
-            case 7:
-            {
-                label  = String("CHANNEL");
-                sVal   = String("1");
+            case 7: {
+                label      = String("CHANNEL");
+                sVal       = String("1");
                 uint8_t ch = screen.getNumKeyboardInputFromUser(&label, &sVal, 2);
                 if (ch == 0)
                 {
@@ -550,8 +621,8 @@ void doEditUtility(Bank* bank)
                     break;
                 }
 
-                label  = String("CC NBR");
-                sVal   = String("0");
+                label       = String("CC NBR");
+                sVal        = String("0");
                 uint16_t cc = screen.getNumKeyboardInputFromUser(&label, &sVal, 3);
                 if (cc > 127)
                 {
@@ -722,7 +793,7 @@ bool doEditBtn(Button* button, const uint8_t btnNbr)
                 dirty = doPcCcEdit(button, btnNbr, PC_1_8) || dirty;
                 break;
             case 5: // PC 9-16
-                dirty = doPcCcEdit(button, btnNbr, PC_9_16);
+                dirty = doPcCcEdit(button, btnNbr, PC_9_16) || dirty;
                 break;
             case 6: // 2. PUSH
             {
@@ -740,7 +811,7 @@ bool doEditBtn(Button* button, const uint8_t btnNbr)
                 dirty = doPcCcEdit(button, btnNbr, CC_1_8) || dirty;
                 break;
             case 8: // CC 9-16
-                dirty = doPcCcEdit(button, btnNbr, CC_9_16);
+                dirty = doPcCcEdit(button, btnNbr, CC_9_16) || dirty;
                 break;
             case 9: // TOGL ON
             {
@@ -886,6 +957,8 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
         switch (btn)
         {
             case 0: // CALCEL
+                loop = false;
+                break;
             case 1: // EXIT
                 loop = false;
                 break;
@@ -918,14 +991,11 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
             case 3: {
                 if (pc)
                 {
-                    sLabel = String("PC NBR");
-                    nVal   = button->pcMessages[pcCcNbr - 1].valueOn;
+                    break;
                 }
-                else
-                {
-                    sLabel = String("CC NBR");
-                    nVal   = button->ccMessages[pcCcNbr - 1].ccNumber;
-                }
+
+                sLabel = String("CC NBR");
+                nVal   = button->ccMessages[pcCcNbr - 1].ccNumber;
                 sVal   = String(nVal);
                 newVal = screen.getNumKeyboardInputFromUser(&sLabel, &sVal, 3);
                 if (newVal > 127)
@@ -946,13 +1016,22 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
             case 5: {
                 if (pc)
                 {
+                    sLabel = String("NBR ON");
+                    nVal   = button->pcMessages[pcCcNbr - 1].valueOn;
+                    sVal   = String(nVal);
+                    newVal = screen.getNumKeyboardInputFromUser(&sLabel, &sVal, 3);
+                    if (newVal > 127)
+                        newVal = 127;
+                    if (nVal != newVal)
+                    {
+                        button->pcMessages[pcCcNbr - 1].valueOn = newVal;
+                        dirty                                   = true;
+                    }
                     break;
                 }
-                else
-                {
-                    sLabel = String("CC MIN");
-                    nVal   = button->ccMessages[pcCcNbr - 1].minValue;
-                }
+
+                sLabel = String("CC MIN");
+                nVal   = button->ccMessages[pcCcNbr - 1].minValue;
                 sVal   = String(nVal);
                 newVal = screen.getNumKeyboardInputFromUser(&sLabel, &sVal, 3);
                 if (newVal > 127)
@@ -967,13 +1046,22 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
             case 6: {
                 if (pc)
                 {
+                    sLabel = String("NBR OFF");
+                    nVal   = button->pcMessages[pcCcNbr - 1].valueOff;
+                    sVal   = String(nVal);
+                    newVal = screen.getNumKeyboardInputFromUser(&sLabel, &sVal, 3);
+                    if (newVal > 127)
+                        newVal = 127;
+                    if (nVal != newVal)
+                    {
+                        button->pcMessages[pcCcNbr - 1].valueOff = newVal;
+                        dirty                                    = true;
+                    }
                     break;
                 }
-                else
-                {
-                    sLabel = String("CC MAX");
-                    nVal   = button->ccMessages[pcCcNbr - 1].maxValue;
-                }
+
+                sLabel = String("CC MAX");
+                nVal   = button->ccMessages[pcCcNbr - 1].maxValue;
                 sVal   = String(nVal);
                 newVal = screen.getNumKeyboardInputFromUser(&sLabel, &sVal, 3);
                 if (newVal > 127)
@@ -985,10 +1073,42 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
                 }
                 break;
             }
-            case 7:
-            case 8:
-            case 9:
+            case 7: {
+                if (pc)
+                {
+                    break;
+                }
+                char label1[16];
+                char label2[16];
+                strcpy(label1, "EXP CTRL ON");
+                strcpy(label2, "EXP CTRL OFF");
+                bool result = screen.getBinaryInputFromUser(label1, label2, button->ccMessages[pcCcNbr - 1].ctrlByExp);
+                if (result != button->ccMessages[pcCcNbr - 1].ctrlByExp)
+                {
+                    button->ccMessages[pcCcNbr - 1].ctrlByExp = result;
+                    dirty                                     = true;
+                }
                 break;
+            }
+            case 8:
+                break;
+            case 9: {
+                if (pc)
+                {
+                    break;
+                }
+                char label1[16];
+                char label2[16];
+                strcpy(label1, " MAX V AS CC");
+                strcpy(label2, " MAX VAL STD");
+                bool result = screen.getBinaryInputFromUser(label1, label2, button->ccMessages[pcCcNbr - 1].useMaxValAsCcNbr);
+                if (result != button->ccMessages[pcCcNbr - 1].useMaxValAsCcNbr)
+                {
+                    button->ccMessages[pcCcNbr - 1].useMaxValAsCcNbr = result;
+                    dirty                                            = true;
+                }
+                break;
+            }
         }
     }
     return dirty;
@@ -1005,8 +1125,8 @@ void loadDataStateInfo()
         dataState.bnk = 0;
     if (dataState.btn < 1 || dataState.btn > NUMBER_OF_BUTTONS)
     {
-        dataState.btn           = 1;
-        dataState.btnStateFirst = true;
+        dataState.btn          = 1;
+        dataState.btnPushState = VERY_FIRST_BTN_PUSH;
     }
 }
 
@@ -1027,8 +1147,10 @@ void bankNumToChar(uint8_t num, char* buf)
     buf[2] = '\0';
 }
 
-void resetToggleStates()
+void initHousekeepingVariables()
 {
+    prevExpValue = 128;
+
     Bank* bank = mcd->getBank(dataState.bnk);
     for (size_t i = 0; i < NUMBER_OF_BUTTONS; i++)
     {
@@ -1206,22 +1328,35 @@ void setPc1LabelAttributes(const Button* button)
         if (button->pcMessages[i - 1].channel > 0)
         {
             itoa(button->pcMessages[i - 1].channel, c, 10);
-            editLabelAttrib[i].label2[3] = c[0];
-            editLabelAttrib[i].label2[4] = ' ';
+            editLabelAttrib[i].label2[0] = c[0];
+            editLabelAttrib[i].label2[1] = ' ';
             if (button->pcMessages[i - 1].channel > 9)
-                editLabelAttrib[i].label2[4] = c[1];
-            editLabelAttrib[i].label2[5] = ' ';
-            editLabelAttrib[i].label2[6] = '-';
-            editLabelAttrib[i].label2[7] = ' ';
+                editLabelAttrib[i].label2[1] = c[1];
+            editLabelAttrib[i].label2[2] = ' ';
+            editLabelAttrib[i].label2[3] = '-';
+            editLabelAttrib[i].label2[4] = ' ';
             itoa(button->pcMessages[i - 1].valueOn, c, 10);
-            editLabelAttrib[i].label2[8] = c[0];
-            editLabelAttrib[i].label2[9] = ' ';
+            editLabelAttrib[i].label2[5] = c[0];
+            editLabelAttrib[i].label2[6] = ' ';
             if (button->pcMessages[i - 1].valueOn > 9)
-                editLabelAttrib[i].label2[9] = c[1];
-            editLabelAttrib[i].label2[10] = ' ';
+                editLabelAttrib[i].label2[6] = c[1];
+            editLabelAttrib[i].label2[7] = ' ';
             if (button->pcMessages[i - 1].valueOn > 99)
-                editLabelAttrib[i].label2[10] = c[2];
-            editLabelAttrib[i].label2[11] = '\0';
+                editLabelAttrib[i].label2[7] = c[2];
+
+            editLabelAttrib[i].label2[8]  = ' ';
+            editLabelAttrib[i].label2[9]  = '-';
+            editLabelAttrib[i].label2[10] = ' ';
+            itoa(button->pcMessages[i - 1].valueOff, c, 10);
+            editLabelAttrib[i].label2[11] = c[0];
+            editLabelAttrib[i].label2[12] = ' ';
+            if (button->pcMessages[i - 1].valueOff > 9)
+                editLabelAttrib[i].label2[12] = c[1];
+            editLabelAttrib[i].label2[13] = ' ';
+            if (button->pcMessages[i - 1].valueOff > 99)
+                editLabelAttrib[i].label2[13] = c[2];
+
+            editLabelAttrib[i].label2[14] = '\0';
         }
     }
 
@@ -1355,7 +1490,7 @@ void setCc2LabelAttributes(const Button* button)
     for (size_t i = 1; i < 9; i++)
     {
         strlcpy(editLabelAttrib[i].label2, " ", LABEL_2_LENGTH);
-        if (button->ccMessages[i - 1].channel > 0)
+        if (button->ccMessages[i - 1 + 8].channel > 0)
         {
             itoa(button->ccMessages[i - 1 + 8].channel, c, 10);
             editLabelAttrib[i].label2[0] = c[0];
@@ -1403,11 +1538,11 @@ void setCc2LabelAttributes(const Button* button)
 void setPcDetailLabelAttributes(const PcMsg* msg)
 {
     strlcpy(editLabelAttrib[0].label1, "  EXIT", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[1].label1, " PC CH", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[2].label1, " PC NBR", LABEL_1_LENGTH);
+    strlcpy(editLabelAttrib[1].label1, "CHANNEL", LABEL_1_LENGTH);
+    strlcpy(editLabelAttrib[2].label1, " ", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[3].label1, " ", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[4].label1, " ", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[5].label1, " ", LABEL_1_LENGTH);
+    strlcpy(editLabelAttrib[4].label1, " NBR ON", LABEL_1_LENGTH);
+    strlcpy(editLabelAttrib[5].label1, "NBR OFF", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[6].label1, " ", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[7].label1, " ", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[8].label1, " ", LABEL_1_LENGTH);
@@ -1422,14 +1557,18 @@ void setPcDetailLabelAttributes(const PcMsg* msg)
         editLabelAttrib[1].label2[5] = c[0];
         editLabelAttrib[1].label2[6] = c[1];
         editLabelAttrib[1].label2[7] = c[2];
-    }
-    if (msg->valueOn > 0)
-    {
+
         itoa(msg->valueOn, c, 10);
-        editLabelAttrib[2].label2[5] = c[0];
-        editLabelAttrib[2].label2[6] = c[1];
-        editLabelAttrib[2].label2[7] = c[2];
-        editLabelAttrib[2].label2[8] = c[3];
+        editLabelAttrib[4].label2[5] = c[0];
+        editLabelAttrib[4].label2[6] = c[1];
+        editLabelAttrib[4].label2[7] = c[2];
+        editLabelAttrib[4].label2[8] = c[3];
+
+        itoa(msg->valueOff, c, 10);
+        editLabelAttrib[5].label2[5] = c[0];
+        editLabelAttrib[5].label2[6] = c[1];
+        editLabelAttrib[5].label2[7] = c[2];
+        editLabelAttrib[5].label2[8] = c[3];
     }
 
     for (size_t i = 0; i < 9; i++)
@@ -1441,14 +1580,14 @@ void setPcDetailLabelAttributes(const PcMsg* msg)
 void setCcDetailLabelAttributes(const CcMsg* msg)
 {
     strlcpy(editLabelAttrib[0].label1, "  EXIT", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[1].label1, " CC CH", LABEL_1_LENGTH);
+    strlcpy(editLabelAttrib[1].label1, "CHANNEL", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[2].label1, " CC NBR", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[3].label1, " ", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[4].label1, "MIN VAL", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[5].label1, "MAX VAL", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[6].label1, " ", LABEL_1_LENGTH);
+    strlcpy(editLabelAttrib[6].label1, "EXP CTRL", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[7].label1, " ", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[8].label1, " ", LABEL_1_LENGTH);
+    strlcpy(editLabelAttrib[8].label1, "MAX V CC", LABEL_1_LENGTH);
 
     for (size_t i = 0; i < 9; i++)
         strlcpy(editLabelAttrib[i].label2, "          ", LABEL_2_LENGTH);
@@ -1484,4 +1623,12 @@ void setCcDetailLabelAttributes(const CcMsg* msg)
     {
         editLabelAttrib[i].color = 0;
     }
+
+    editLabelAttrib[6].color = TFT_RED;
+    if (msg->ctrlByExp)
+        editLabelAttrib[6].color = TFT_GREEN;
+
+    editLabelAttrib[8].color = TFT_RED;
+    if (msg->useMaxValAsCcNbr)
+        editLabelAttrib[8].color = TFT_GREEN;
 }

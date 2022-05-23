@@ -3,12 +3,11 @@
 #include <SD.h>
 #include <SPI.h>
 
-MidiCtrlData::MidiCtrlData(const char* dataVersion)
+MidiCtrlData::MidiCtrlData()
 {
-    this->dataVersion = dataVersion;
 
-    folder = strdup(prefixVER);
-    strcat(folder, dataVersion);
+    folder = strdup(PREFIX_VER);
+    strcat(folder, MIDI_CTRL_DATA_VERSION);
 
     if (verifyVersionFolderExists())
     {
@@ -48,10 +47,9 @@ void MidiCtrlData::copyBank(const byte bankNbrFrom, const byte bankNbrTo)
     {
         copyButtonData(bankNbrFrom, j, bankNbrTo, j);
     }
-    
+
     serializeBank(bankNbrTo);
 }
-
 
 void MidiCtrlData::resetButton(const byte bankNbr, const byte buttonNbr)
 {
@@ -73,13 +71,15 @@ void MidiCtrlData::copyButtonData(const byte bankNbrFrom, const byte buttonNbrFr
     banks[bankNbrTo].buttons[buttonNbrTo].isInitialToggleStateOn = banks[bankNbrFrom].buttons[buttonNbrFrom].isInitialToggleStateOn;
     for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
     {
-        banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].channel  = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].channel;
-        banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].valueOn  = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].valueOn;
-        banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].valueOff = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].valueOff;
-        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].channel  = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].channel;
-        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].ccNumber = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].ccNumber;
-        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].minValue = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].minValue;
-        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].maxValue = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].maxValue;
+        banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].channel          = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].channel;
+        banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].valueOn          = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].valueOn;
+        banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].valueOff         = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].valueOff;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].channel          = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].channel;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].ccNumber         = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].ccNumber;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].minValue         = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].minValue;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].maxValue         = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].maxValue;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].useMaxValAsCcNbr = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].useMaxValAsCcNbr;
+        banks[bankNbrTo].buttons[buttonNbrTo].ccMessages[k].ctrlByExp        = banks[bankNbrFrom].buttons[buttonNbrFrom].ccMessages[k].ctrlByExp;
     }
 }
 
@@ -90,12 +90,12 @@ void MidiCtrlData::initialize()
         initializeBank(i);
     }
     serialize();
-}    
+}
 
 void MidiCtrlData::initializeBank(const byte bankNbr)
 {
 
-    strcpy(banks[bankNbr].name, "BANK");
+    strcpy(banks[bankNbr].name, BANK);
     banks[bankNbr].pcMessage.channel  = 0;
     banks[bankNbr].pcMessage.valueOn  = 0;
     banks[bankNbr].pcMessage.valueOff = 0;
@@ -107,19 +107,21 @@ void MidiCtrlData::initializeBank(const byte bankNbr)
 
 void MidiCtrlData::initializeButton(const byte bankNbr, const byte buttonNbr)
 {
-    strcpy(banks[bankNbr].buttons[buttonNbr].name, "PATCH");
+    strcpy(banks[bankNbr].buttons[buttonNbr].name, PATCH);
     banks[bankNbr].buttons[buttonNbr].isPatch                = true;
     banks[bankNbr].buttons[buttonNbr].isSecondPushEnabled    = true;
     banks[bankNbr].buttons[buttonNbr].isInitialToggleStateOn = false;
     for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
     {
-        banks[bankNbr].buttons[buttonNbr].pcMessages[k].channel  = 0;
-        banks[bankNbr].buttons[buttonNbr].pcMessages[k].valueOn  = 0;
-        banks[bankNbr].buttons[buttonNbr].pcMessages[k].valueOff = 0;
-        banks[bankNbr].buttons[buttonNbr].ccMessages[k].channel  = 0;
-        banks[bankNbr].buttons[buttonNbr].ccMessages[k].ccNumber = 0;
-        banks[bankNbr].buttons[buttonNbr].ccMessages[k].minValue = 0;
-        banks[bankNbr].buttons[buttonNbr].ccMessages[k].maxValue = 0;
+        banks[bankNbr].buttons[buttonNbr].pcMessages[k].channel          = 0;
+        banks[bankNbr].buttons[buttonNbr].pcMessages[k].valueOn          = 0;
+        banks[bankNbr].buttons[buttonNbr].pcMessages[k].valueOff         = 0;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].channel          = 0;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].ccNumber         = 0;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].minValue         = 0;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].maxValue         = 0;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].useMaxValAsCcNbr = false;
+        banks[bankNbr].buttons[buttonNbr].ccMessages[k].ctrlByExp        = false;
     }
 }
 
@@ -133,32 +135,34 @@ void MidiCtrlData::deserialize()
 
 void MidiCtrlData::deserializeBank(const int id)
 {
-    DynamicJsonDocument doc(arduinoJsonDocSize);
+    DynamicJsonDocument doc(ARDUINO_JSON_DOC_SIZE);
     loadBankFromFile(buildPath(id), doc);
 
-    strlcpy(banks[id].name, doc["name"], sizeof(banks[id].name));
-    banks[id].pcMessage.channel  = doc["pcChannel"];
-    banks[id].pcMessage.valueOn  = doc["pcValueOn"];
-    banks[id].pcMessage.valueOff = doc["pcValueOff"];
+    strlcpy(banks[id].name, doc[NAME], sizeof(banks[id].name));
+    banks[id].pcMessage.channel  = doc[PC_CHANNEL];
+    banks[id].pcMessage.valueOn  = doc[PC_VALUE_ON];
+    banks[id].pcMessage.valueOff = doc[PC_VALUE_OFF];
 
     for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
     {
-        JsonObject btn = doc["button" + String(j)];
-        strlcpy(banks[id].buttons[j].name, btn["name"], sizeof(banks[id].buttons[j].name));
-        banks[id].buttons[j].isPatch                = btn["isPatch"];
-        banks[id].buttons[j].isSecondPushEnabled    = btn["isSecondPushEnabled"];
-        banks[id].buttons[j].isInitialToggleStateOn = btn["isInitialToggleStateOn"];
+        JsonObject btn = doc[BUTTON+String(j)];
+        strlcpy(banks[id].buttons[j].name, btn[NAME], sizeof(banks[id].buttons[j].name));
+        banks[id].buttons[j].isPatch                = btn[IS_PATCH];
+        banks[id].buttons[j].isSecondPushEnabled    = btn[IS_SECOND_PUSH_ENABLED];
+        banks[id].buttons[j].isInitialToggleStateOn = btn[IS_INITIAL_TOGGLE_STATE_ON];
 
         for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
         {
-            JsonObject msg                              = btn["message" + String(k)];
-            banks[id].buttons[j].pcMessages[k].channel  = msg["pcChannel"];
-            banks[id].buttons[j].pcMessages[k].valueOn  = msg["pcValueOn"];
-            banks[id].buttons[j].pcMessages[k].valueOff = msg["pcValueOff"];
-            banks[id].buttons[j].ccMessages[k].channel  = msg["ccChannel"];
-            banks[id].buttons[j].ccMessages[k].ccNumber = msg["ccNumber"];
-            banks[id].buttons[j].ccMessages[k].minValue = msg["ccMinValue"];
-            banks[id].buttons[j].ccMessages[k].maxValue = msg["ccMaxValue"];
+            JsonObject msg                                      = btn[MESSAGE + String(k)];
+            banks[id].buttons[j].pcMessages[k].channel          = msg[PC_CHANNEL];
+            banks[id].buttons[j].pcMessages[k].valueOn          = msg[PC_VALUE_ON];
+            banks[id].buttons[j].pcMessages[k].valueOff         = msg[PC_VALUE_OFF];
+            banks[id].buttons[j].ccMessages[k].channel          = msg[CC_CHANNEL];
+            banks[id].buttons[j].ccMessages[k].ccNumber         = msg[CC_NUMBER];
+            banks[id].buttons[j].ccMessages[k].minValue         = msg[CC_VALUE_MIN];
+            banks[id].buttons[j].ccMessages[k].maxValue         = msg[CC_VALUE_MAX];
+            banks[id].buttons[j].ccMessages[k].useMaxValAsCcNbr = msg[CC_VALUE_MAX_AS_CC_NBR];
+            banks[id].buttons[j].ccMessages[k].ctrlByExp        = msg[CC_CTRL_BY_EXP];
         }
     }
 }
@@ -173,31 +177,33 @@ void MidiCtrlData::serialize()
 
 void MidiCtrlData::serializeBank(const int id)
 {
-    DynamicJsonDocument doc(arduinoJsonDocSize);
+    DynamicJsonDocument doc(ARDUINO_JSON_DOC_SIZE);
 
-    doc["name"]       = banks[id].name;
-    doc["pcChannel"]  = banks[id].pcMessage.channel;
-    doc["pcValueOn"]  = banks[id].pcMessage.valueOn;
-    doc["pcValueOff"] = banks[id].pcMessage.valueOff;
+    doc[NAME]         = banks[id].name;
+    doc[PC_CHANNEL]   = banks[id].pcMessage.channel;
+    doc[PC_VALUE_ON]  = banks[id].pcMessage.valueOn;
+    doc[PC_VALUE_OFF] = banks[id].pcMessage.valueOff;
 
     for (int j = 0; j < NUMBER_OF_BUTTONS; j++)
     {
-        JsonObject btn                = doc.createNestedObject("button" + String(j));
-        btn["name"]                   = banks[id].buttons[j].name;
-        btn["isPatch"]                = banks[id].buttons[j].isPatch;
-        btn["isSecondPushEnabled"]    = banks[id].buttons[j].isSecondPushEnabled;
-        btn["isInitialToggleStateOn"] = banks[id].buttons[j].isInitialToggleStateOn;
+        JsonObject btn                  = doc.createNestedObject(BUTTON + String(j));
+        btn[NAME]                       = banks[id].buttons[j].name;
+        btn[IS_PATCH]                   = banks[id].buttons[j].isPatch;
+        btn[IS_SECOND_PUSH_ENABLED]     = banks[id].buttons[j].isSecondPushEnabled;
+        btn[IS_INITIAL_TOGGLE_STATE_ON] = banks[id].buttons[j].isInitialToggleStateOn;
 
         for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
         {
-            JsonObject msg    = btn.createNestedObject("message" + String(k));
-            msg["pcChannel"]  = banks[id].buttons[j].pcMessages[k].channel;
-            msg["pcValueOn"]  = banks[id].buttons[j].pcMessages[k].valueOn;
-            msg["pcValueOff"] = banks[id].buttons[j].pcMessages[k].valueOff;
-            msg["ccChannel"]  = banks[id].buttons[j].ccMessages[k].channel;
-            msg["ccNumber"]   = banks[id].buttons[j].ccMessages[k].ccNumber;
-            msg["ccMinValue"] = banks[id].buttons[j].ccMessages[k].minValue;
-            msg["ccMaxValue"] = banks[id].buttons[j].ccMessages[k].maxValue;
+            JsonObject msg              = btn.createNestedObject(MESSAGE + String(k));
+            msg[PC_CHANNEL]             = banks[id].buttons[j].pcMessages[k].channel;
+            msg[PC_VALUE_ON]            = banks[id].buttons[j].pcMessages[k].valueOn;
+            msg[PC_VALUE_OFF]           = banks[id].buttons[j].pcMessages[k].valueOff;
+            msg[CC_CHANNEL]             = banks[id].buttons[j].ccMessages[k].channel;
+            msg[CC_NUMBER]              = banks[id].buttons[j].ccMessages[k].ccNumber;
+            msg[CC_VALUE_MIN]           = banks[id].buttons[j].ccMessages[k].minValue;
+            msg[CC_VALUE_MAX]           = banks[id].buttons[j].ccMessages[k].maxValue;
+            msg[CC_VALUE_MAX_AS_CC_NBR] = banks[id].buttons[j].ccMessages[k].useMaxValAsCcNbr;
+            msg[CC_CTRL_BY_EXP]         = banks[id].buttons[j].ccMessages[k].ctrlByExp;
         }
     }
     // serializeJsonPretty(doc, Serial);
@@ -276,9 +282,9 @@ bool MidiCtrlData::verifyVersionFolderExists()
 char* MidiCtrlData::buildPath(int id)
 {
     char filename[10];
-    strcpy(filename, prefixBANK);
+    strcpy(filename, PREFIX_BANK);
     itoa(id, filename + strlen(filename), 10);
-    strcat(filename, ".txt");
+    strcat(filename, ".json");
 
     static char path[20];
     strcpy(path, folder);

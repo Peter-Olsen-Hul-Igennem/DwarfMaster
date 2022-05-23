@@ -23,6 +23,8 @@ struct CcMsg
     char ccNumber;
     char minValue;
     char maxValue;
+    char useMaxValAsCcNbr;
+    char ctrlByExp;
 };
 
 struct Button
@@ -45,12 +47,12 @@ struct Bank
 class MidiCtrlData
 {
  public:
-    MidiCtrlData(const char* dataVersion);
+    MidiCtrlData();
     Bank* getBank(const byte bankNbr);
     void saveBank(const byte bankNbr);
     void resetBank(const byte bankNbr);
     void copyBank(const byte bankNbrFrom, const byte bankNbrTo);
-    void resetButton(const byte bankNbr, const byte buttonNbr); // This buttonNbr is 0 based
+    void resetButton(const byte bankNbr, const byte buttonNbr);                                                      // This buttonNbr is 0 based
     void copyButton(const byte bankNbrFrom, const byte buttonNbrFrom, const byte bankNbrTo, const byte buttonNbrTo); // This buttonNbrs are 0 based
 
  private:
@@ -69,11 +71,30 @@ class MidiCtrlData
 
     Bank banks[NUMBER_OF_BANKS];
 
-    const char* dataVersion;
-    const char* prefixVER        = "VER_";
-    const char* prefixBANK       = "BANK_";
-    const int arduinoJsonDocSize = 15000;
+    const char* MIDI_CTRL_DATA_VERSION   = "0.3";
+    const char* PREFIX_VER               = "VER_";
+    const char* PREFIX_BANK              = "BANK_";
+    const uint16_t ARDUINO_JSON_DOC_SIZE = 20000;
 
+    
+    const char BANK[5] = "BANK";
+    const char PATCH[6] = "PATCH";
+    const char BUTTON[7] = "button";
+    const char NAME[5] = "name";
+    const char IS_PATCH[8] = "isPatch";
+    const char IS_SECOND_PUSH_ENABLED[20] = "isSecondPushEnabled";
+    const char IS_INITIAL_TOGGLE_STATE_ON[23] ="isInitialToggleStateOn";
+    const char MESSAGE[8] = "message";
+    const char PC_CHANNEL[10] = "pcChannel";
+    const char PC_VALUE_ON[10] = "pcValueOn";
+    const char PC_VALUE_OFF[11] = "pcValueOff";
+    const char CC_CHANNEL[10] = "ccChannel";
+    const char CC_NUMBER[9] = "ccNumber";
+    const char CC_VALUE_MIN[11] = "ccMinValue";
+    const char CC_VALUE_MAX[11] = "ccMaxValue";
+    const char CC_VALUE_MAX_AS_CC_NBR[18] = "ccMaxValueAsCcNbr";
+    const char CC_CTRL_BY_EXP[10] = "ctrlByExp";
+    
     char* folder;
 };
 
