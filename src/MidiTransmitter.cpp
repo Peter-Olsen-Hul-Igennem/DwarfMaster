@@ -2,6 +2,9 @@
 
 void MidiTransmitter::sendPcMsg(const PcMsg msg, const bool first)
 {
+    if (msg.channel == 0) // Midichannel == 0: Disabled. 
+        return;
+
     if (first)
         usbMIDI.sendProgramChange(msg.valueOn, msg.channel);
     else
@@ -10,6 +13,12 @@ void MidiTransmitter::sendPcMsg(const PcMsg msg, const bool first)
 
 void MidiTransmitter::sendCcMsg(const CcMsg msg, const bool first, const bool maxValAsCc)
 {
+    if (msg.channel == 0) // Midichannel == 0: Disabled. 
+        return;
+    
+    if (msg.ctrlByExp) // CtrlByExp: Controlled continously by expression pedal.
+        return;
+    
     if (first)
     {
         usbMIDI.sendControlChange(msg.ccNumber, msg.minValue, msg.channel);
@@ -26,17 +35,14 @@ void MidiTransmitter::sendCcMsg(const CcMsg msg, const bool first, const bool ma
 void MidiTransmitter::sendExpressionMessages(const uint8_t expPin, const Bank* bank, const bool* toggleStates, const uint8_t currentSelectedBtn)
 {
     uint64_t now = millis();
-    
+
     if (now - prevReadTime < 100) // Limiting the number of reads to 10 pr. second.
         return;
-    
+
     uint8_t expVal = map(analogRead(expPin), 0, 1013, 0, 127);
     if (expVal == prevExpValue)
         return;
-    
-    Serial.print(expVal);
-    Serial.print(" ");
-    Serial.println(now - prevReadTime);
+
     prevReadTime = now;
     prevExpValue = expVal;
 
