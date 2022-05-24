@@ -1,5 +1,7 @@
 #include "Screen.h"
 #include "ButtonState.h"
+#include <Fonts/FreeSansBold24pt7b.h>
+#include <Fonts/FreeSansBold12pt7b.h>
 
 Screen::Screen()
 {
@@ -8,11 +10,13 @@ Screen::Screen()
     tft.fillScreen(TFT_BLACK);
 
     tft.setTextColor(TFT_DARKGREY);
-    tft.setTextSize(8);
-    tft.setCursor(45, 50);
+    tft.setFont(&FreeSansBold24pt7b);
+    tft.setTextSize(1);
+    tft.setCursor(75, 100);
     tft.print("DWARF");
-    tft.setCursor(20, 130);
+    tft.setCursor(60, 170);
     tft.print("MASTER");
+    tft.setFont();
 }
 
 void Screen::showWaitScreen()
@@ -20,13 +24,13 @@ void Screen::showWaitScreen()
     tft.fillScreen(TFT_BLACK);
 
     tft.setTextColor(TFT_DARKGREY);
-    tft.setTextSize(3);
-    tft.setCursor(20, 50);
-    tft.print("PRESS A BUTTON");
-    tft.setCursor(20, 100);
-    tft.print("WHEN THE DWARF");
-    tft.setCursor(20, 150);
-    tft.print("IS READY!");
+    tft.setTextSize(1);
+    tft.setFont(&FreeSansBold12pt7b);
+    tft.setCursor(10, 100);
+    tft.print("PRESS A BUTTON WHEN");
+    tft.setCursor(10, 150);
+    tft.print("THE DWARF IS READY!");
+    tft.setFont();
 
     Point p;
     ButtonState* btnState = btnState->getInstance();
@@ -190,7 +194,6 @@ void Screen::printButtonLabel(const uint16_t offsetX, const uint16_t offsetY, co
         }
         xPosOffset = getXposOffset(txt, maxNbrOfChars, textSize);
         tft.setCursor(offsetX + xPosOffset, offsetY + 28);
-        // txt[maxNbrOfChars] = '\0';
         tft.print(String(txt));
     }
 }
