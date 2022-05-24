@@ -1,7 +1,6 @@
 #include "Screen.h"
 #include "ButtonState.h"
 
-
 Screen::Screen()
 {
     tft.begin(0x9341);
@@ -25,7 +24,7 @@ void Screen::showWaitScreen()
     tft.setCursor(20, 50);
     tft.print("PRESS A BUTTON");
     tft.setCursor(20, 100);
-    tft.print("WHEN THE DWARF"); 
+    tft.print("WHEN THE DWARF");
     tft.setCursor(20, 150);
     tft.print("IS READY!");
 
@@ -38,7 +37,7 @@ void Screen::showWaitScreen()
         {
             return;
         }
-        if (btnState->getSingleButtonPressed() > 0) 
+        if (btnState->getSingleButtonPressed() > 0)
         {
             return;
         }
@@ -78,9 +77,10 @@ void Screen::drawPlayButton(const uint8_t btnNbr, const bool patch, const bool s
 {
     uint16_t bgColor  = TFT_LIGHTGREY;
     uint16_t txtColor = TFT_BLACK;
+    uint8_t txtSize   = 3;
     if (patch)
     {
-        if (selectedPatch && !invertSelected) 
+        if (selectedPatch && !invertSelected)
         {
             if (btnStateFirst)
             {
@@ -109,33 +109,33 @@ void Screen::drawPlayButton(const uint8_t btnNbr, const bool patch, const bool s
     }
 
     tft.setTextColor(txtColor);
-    tft.setTextSize(3);
+    tft.setTextSize(txtSize);
 
     switch (btnNbr)
     {
         case 1:
             tft.fillRect(0, DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-            printButtonLabel(BTN_OFFSET_X_1, BTN_OFFSET_Y_BTM, btnLabel);
+            printButtonLabel(BTN_OFFSET_X_1, BTN_OFFSET_Y_BTM, btnLabel, txtSize);
             break;
         case 2:
             tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-            printButtonLabel(BTN_OFFSET_X_2, BTN_OFFSET_Y_BTM, btnLabel);
+            printButtonLabel(BTN_OFFSET_X_2, BTN_OFFSET_Y_BTM, btnLabel, txtSize);
             break;
         case 3:
             tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH + PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-            printButtonLabel(BTN_OFFSET_X_3, BTN_OFFSET_Y_BTM, btnLabel);
+            printButtonLabel(BTN_OFFSET_X_3, BTN_OFFSET_Y_BTM, btnLabel, txtSize);
             break;
         case 4:
             tft.fillRect(0, 0, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-            printButtonLabel(BTN_OFFSET_X_1, BTN_OFFSET_Y_TOP, btnLabel);
+            printButtonLabel(BTN_OFFSET_X_1, BTN_OFFSET_Y_TOP, btnLabel, txtSize);
             break;
         case 5:
             tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, 0, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-            printButtonLabel(BTN_OFFSET_X_2, BTN_OFFSET_Y_TOP, btnLabel);
+            printButtonLabel(BTN_OFFSET_X_2, BTN_OFFSET_Y_TOP, btnLabel, txtSize);
             break;
         case 6:
             tft.fillRect(PLAY_BTN_LABEL_WIDTH + LINE_WIDTH + PLAY_BTN_LABEL_WIDTH + LINE_WIDTH, 0, PLAY_BTN_LABEL_WIDTH, PLAY_BTN_LABEL_HEIGHT, bgColor);
-            printButtonLabel(BTN_OFFSET_X_3, BTN_OFFSET_Y_TOP, btnLabel);
+            printButtonLabel(BTN_OFFSET_X_3, BTN_OFFSET_Y_TOP, btnLabel, txtSize);
             break;
 
         default:
@@ -143,25 +143,54 @@ void Screen::drawPlayButton(const uint8_t btnNbr, const bool patch, const bool s
     }
 }
 
-void Screen::printButtonLabel(const uint16_t offsetX, const uint16_t offsetY, const char* btnLabel)
+void Screen::printButtonLabel(const uint16_t offsetX, const uint16_t offsetY, const char* btnLabel, const uint8_t textSize)
 {
     size_t maxNbrOfChars = 5;
     size_t labelSize     = strlen(btnLabel);
+    uint8_t xPosOffset   = 0;
     char txt[maxNbrOfChars + 1];
     if (labelSize < maxNbrOfChars + 1)
     {
-        tft.setCursor(offsetX, offsetY + 14);
-        tft.print(String(btnLabel));
+        strncpy(txt, &btnLabel[0], maxNbrOfChars);
+        for (size_t i = maxNbrOfChars; i > 0; i--)
+        {
+            if (txt[i - 1] != ' ')
+            {
+                txt[i] = '\0';
+                break;
+            }
+        }
+        xPosOffset = getXposOffset(txt, maxNbrOfChars, textSize);
+        tft.setCursor(offsetX + xPosOffset, offsetY + 14);
+        tft.print(String(txt));
     }
     else
     {
-        tft.setCursor(offsetX, offsetY);
         strncpy(txt, &btnLabel[0], maxNbrOfChars);
-        txt[maxNbrOfChars] = '\0';
+        for (size_t i = maxNbrOfChars; i > 0; i--)
+        {
+            if (txt[i - 1] != ' ')
+            {
+                txt[i] = '\0';
+                break;
+            }
+        }
+        xPosOffset = getXposOffset(txt, maxNbrOfChars, textSize);
+        tft.setCursor(offsetX + xPosOffset, offsetY);
         tft.print(String(txt));
-        tft.setCursor(offsetX, offsetY + 28);
+
         strncpy(txt, &btnLabel[maxNbrOfChars], maxNbrOfChars);
-        txt[maxNbrOfChars] = '\0';
+        for (size_t i = maxNbrOfChars; i > 0; i--)
+        {
+            if (txt[i - 1] != ' ')
+            {
+                txt[i] = '\0';
+                break;
+            }
+        }
+        xPosOffset = getXposOffset(txt, maxNbrOfChars, textSize);
+        tft.setCursor(offsetX + xPosOffset, offsetY + 28);
+        // txt[maxNbrOfChars] = '\0';
         tft.print(String(txt));
     }
 }
@@ -195,8 +224,8 @@ String Screen::getKeyboardInputFromUser(const String* contextLabel, const String
 uint16_t Screen::getNumKeyboardInputFromUser(const String* contextLabel, const String* oldVal, const byte maxLength)
 {
     uint16_t result = 0;
-    String newVal = numTouchKeyb.getInputFromUser(contextLabel, oldVal, maxLength);
-    result = newVal.toInt();
+    String newVal   = numTouchKeyb.getInputFromUser(contextLabel, oldVal, maxLength);
+    result          = newVal.toInt();
     return result;
 }
 
@@ -211,6 +240,33 @@ bool Screen::playBankPressed()
     return false;
 }
 
+uint8_t Screen::playBtnPressed()
+{
+    Point p = touch.getTouchPoint();
+    if (p.pressed)
+    {
+        if (p.y < PLAY_BTN_LABEL_HEIGHT)
+        {
+            if (p.x < PLAY_BTN_LABEL_WIDTH)
+                return 4;
+            else if (p.x < (PLAY_BTN_LABEL_WIDTH * 2 + LINE_WIDTH))
+                return 5;
+            else
+                return 6;
+        }
+        else if (p.y > DISPLAY_HEIGHT - PLAY_BTN_LABEL_HEIGHT)
+        {
+            if (p.x < PLAY_BTN_LABEL_WIDTH)
+                return 1;
+            else if (p.x < (PLAY_BTN_LABEL_WIDTH * 2 + LINE_WIDTH))
+                return 2;
+            else
+                return 3;
+        }
+    }
+    return 0;
+}
+
 void Screen::drawEdit(const char* label, const EditLabelAttributes* btnLabels)
 {
     drawEditGrid();
@@ -218,13 +274,14 @@ void Screen::drawEdit(const char* label, const EditLabelAttributes* btnLabels)
     printEditButtonLabels(btnLabels);
 }
 
-int Screen::getButtonPushed() {
-    uint16_t cnt = 0;
+int Screen::getButtonPushed()
+{
+    uint16_t cnt   = 0;
     int prevButton = -2;
-    int button = -1;
+    int button     = -1;
 
     ButtonState* btnState = btnState->getInstance();
-    
+
     Point p;
     while (true)
     {
@@ -234,7 +291,7 @@ int Screen::getButtonPushed() {
             button = mapPointToBtn(p);
             if (button != prevButton)
             {
-                cnt = 0;
+                cnt        = 0;
                 prevButton = button;
             }
             else
@@ -252,7 +309,7 @@ int Screen::getButtonPushed() {
     return button;
 }
 
-void Screen::waitForButtonReleased() 
+void Screen::waitForButtonReleased()
 {
     touch.waitForTouchReleased();
     return;
@@ -261,7 +318,7 @@ void Screen::waitForButtonReleased()
 void Screen::drawEditGrid()
 {
     tft.fillScreen(BACKGROUND_COLOR);
-    
+
     int x;
     int y;
     for (int j = 1; j < 4; j++)
@@ -270,7 +327,6 @@ void Screen::drawEditGrid()
         for (int i = 0; i < 3; i++)
         {
             tft.drawLine(0, y + i, DISPLAY_WIDTH, y + i, LINE_COLOR);
-
         }
         x = X_SIZE * j;
         if (j < 3)
@@ -295,24 +351,27 @@ void Screen::printEditButtonLabels(const EditLabelAttributes* labels)
 {
     tft.setTextColor(TFT_BLACK);
     tft.setTextSize(2);
-    byte cnt = 0;
-    int y    = 0;
-    int x    = 0;
-    for (int j = 1; j < 4; j++)
+    uint8_t cnt     = 0;
+    uint16_t y      = 0;
+    uint16_t x      = 0;
+    uint8_t xOffset = 0;
+    for (uint8_t j = 1; j < 4; j++)
     {
         y = 15 + (Y_SIZE * j);
-        for (int i = 0; i < 3; i++)
+        for (uint8_t i = 0; i < 3; i++)
         {
             x = 7 + (X_SIZE * i);
             tft.fillRect(x, y, 95, 40, BACKGROUND_COLOR);
             tft.setTextSize(2);
-            tft.setCursor(x, y);
+            xOffset = getXposOffset(labels[cnt].label1, 8, 2);
+            tft.setCursor(x + xOffset, y);
             tft.print(labels[cnt].label1);
             tft.setTextSize(1);
-            tft.setCursor(x+5, y+25);
+            xOffset = getXposOffset(labels[cnt].label2, 16, 1);
+            tft.setCursor(x + xOffset, y + 25);
             tft.print(labels[cnt].label2);
             if (labels[cnt].color > 0)
-                tft.fillRect(x, y+25, 95, 5, labels[cnt].color);
+                tft.fillRect(x, y + 25, 95, 5, labels[cnt].color);
             cnt++;
         }
     }
@@ -321,10 +380,10 @@ void Screen::printEditButtonLabels(const EditLabelAttributes* labels)
 bool Screen::getBinaryInputFromUser(const char* label1, const char* label2, const bool firstIsTrue)
 {
     bool prevChoice = firstIsTrue;
-    bool newChoice = firstIsTrue;
-    
+    bool newChoice  = firstIsTrue;
+
     drawBinaryEdit(label1, label2, firstIsTrue);
-    
+
     waitForButtonReleased();
 
     ButtonState* btnState = btnState->getInstance();
@@ -358,7 +417,7 @@ bool Screen::getBinaryInputFromUser(const char* label1, const char* label2, cons
     }
     return newChoice;
 }
-    
+
 void Screen::drawBinaryEdit(const char* label1, const char* label2, bool firstIsTrue)
 {
     tft.fillScreen(BACKGROUND_COLOR);
@@ -371,7 +430,7 @@ void Screen::drawBinaryEdit(const char* label1, const char* label2, bool firstIs
     {
         tft.drawLine(0, DISPLAY_HEIGHT / 2 - 2 + i, DISPLAY_WIDTH, DISPLAY_HEIGHT / 2 - 2 + i, TFT_BLACK);
     }
-    
+
     tft.setTextColor(TFT_BLACK);
     tft.setTextSize(4);
     tft.setCursor(10, 45);
@@ -389,4 +448,29 @@ uint8_t Screen::mapPointToBtn(Point point)
     uint8_t y = point.y / Y_SIZE - 1;
 
     return x + (3 * y);
+}
+
+uint8_t Screen::getXposOffset(const char* label, const uint8_t maxNbrOfChars, const uint8_t textSize)
+{
+    uint16_t result = 0;
+    // int16_t x;
+    // int16_t y;
+    uint16_t w;
+    // uint16_t h;
+    uint8_t dif             = maxNbrOfChars - strlen(label);
+    bool difIsAnEqualNumber = true;
+
+    if (dif % 2 == 1)
+        difIsAnEqualNumber = false;
+
+    dif = dif / 2;
+
+    // tft.setTextSize(textSize);
+    // tft.getTextBounds("X", 0, 0, &x, &y, &w, &h);
+    w      = textSize * 6;
+    result = dif * w;
+    if (!difIsAnEqualNumber)
+        result += w / 2;
+
+    return result;
 }

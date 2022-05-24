@@ -12,5 +12,6 @@ This repository will hold source files and other documentation related to the bu
 This is not ment to be a community project as the contoller is tailored to my specific needs, but all code is avalible to anyone doing a similar project.
 This is my first project using the Arduino/Teensy platform, and the code shows that I'm learning as I go - so quite a few "hacks" and inconsistencies can be found.
 
+The code is developed using VisualTeensy and Visual Studio Code.
 These external libraries are used: ArduinoJson 6.19.4, Adafruit_BusIO 1.11.5, Adafruit_TouchScreen 1.1.3, Adafruit_GFX_Library 1.10.14, MCUFRIEND_kbv 2.9.9 
 These internal libraries are used: EEPROM 2.0, SD 2.0.0, SdFat 2.1.0, SPI 1.0, Wire 1.0
