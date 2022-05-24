@@ -6,18 +6,18 @@
 class PushButton
 {
  public:
-    PushButton(const byte pin);
-    byte getState();
+    PushButton(const uint8_t pin);
+    uint8_t getState();
     bool isPressed();
 
  private:
     void update();
 
-    byte pin;
-    byte state;
-    byte lastReading;
-    unsigned long lastDebounceTime    = 0;
-    const unsigned long debounceDelay = 20;
+    uint8_t pin;
+    uint8_t state;
+    uint8_t lastReading;
+    uint64_t lastDebounceTime = 0;
+    uint8_t debounceDelay     = 20;
 };
 
 #endif

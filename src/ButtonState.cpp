@@ -49,7 +49,7 @@ void ButtonState::determineState()
                 if (buttons[i]->isPressed())
                     cnt++;
             }
-            if (millis() - lastTime > stateDelay)
+            if (millis() - lastTime > STATE_DELAY)
             {
                 if (cnt == 1)
                     state = 2;
@@ -82,14 +82,12 @@ void ButtonState::determineState()
                 if (buttons[i]->isPressed())
                     cnt++;
             }
-            if (millis() - lastTime > stateDelay)
+            if (millis() - lastTime > STATE_DELAY)
             {
                 if (cnt == 0)
                     state = 0;
             }
             break;
-
-            // default:
     }
 }
 

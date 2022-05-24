@@ -22,8 +22,6 @@ Point Touch::getTouchPoint()
     if (tsp.z > MINPRESSURE && tsp.z < MAXPRESSURE)
     {
         p.pressed = true;
-        // p.x = map(tsp.x, TS_LEFT, TS_RT, 0, tft.width());
-        // p.y = map(tsp.y, TS_TOP, TS_BOT, 0, tft.height());
         p.x = map(tsp.y, TS_TOP, TS_BOT, 0, 320);
         p.y = map(tsp.x, TS_RT, TS_LEFT, 0, 240);
     }

@@ -1,6 +1,7 @@
 #include "ButtonState.h"
 #include "GlobalConst.h"
 #include "MidiCtrlData.h"
+#include "MidiTransmitter.h"
 #include "Screen.h"
 #include "Touch.h"
 #include <Arduino.h>
@@ -33,14 +34,12 @@ void bankChange(bool up);
 void drawPlayScreen();
 void drawPlayBtns(const bool overrideSelected, const bool invertSelected = false);
 void drawPlayBank(const int bnkNbr, const bool inverted);
-void sendBankMidi();
 void sendButtonMidi(Button button, BtnPushState btnState);
-void sendExpressionMidi();
 
 void editMode(uint8_t editBtnNbr);
 void doEditUtility();
 bool doEditBank();
-bool doEditBtn(Button* button, uint8_t btnNbr);
+bool doEditBtn(uint8_t btnNbr);
 bool doPcCcEdit(Button* button, uint8_t btnNbr, PcCcEnum pcCc);
 bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum pcCc);
 
@@ -62,23 +61,22 @@ void setCcDetailLabelAttributes(const CcMsg* msg);
 
 EditLabelAttributes editLabelAttrib[9];
 
-Screen screen;
+Screen screen; // TODO pointer
 MidiCtrlData* mcd;
-ButtonState* btnState = btnState->getInstance();
-
 Bank* bank;
+ButtonState* btnState = btnState->getInstance();
+MidiTransmitter* midiTransmitter;
 
 struct DataState
 {
     uint8_t bnk;
     uint8_t btn;
-    // uint8_t btnStateFirst;
     BtnPushState btnPushState = VERY_FIRST_BTN_PUSH;
 };
 DataState dataState;
 
 bool toggleStates[NUMBER_OF_BUTTONS]; // Keeping track of the states of the toggle switches (buttons not set up to be patches). True is ON.
-uint8_t prevExpValue = 128;           // Range is 0-127 so initialising with 128 garanties that the read value is different.
+uint8_t prevExpValue = 128;           // Range is 0-127 so initialising with 128 guaranties that the read value is different.
 
 void setup()
 {
@@ -88,6 +86,8 @@ void setup()
     loadDataStateInfo();
     mcd  = new MidiCtrlData();
     bank = mcd->getBank(dataState.bnk);
+
+    midiTransmitter = new MidiTransmitter();
 
     initHousekeepingVariables();
 
@@ -208,7 +208,9 @@ void playMode()
 
         drawPlayBtns(false);
     }
-    sendExpressionMidi();
+
+    // Send Expressionpedal midi
+    midiTransmitter->sendExpressionMessages(EXP_PIN, bank, toggleStates, dataState.btn);
 }
 
 void bankChange(bool up)
@@ -253,7 +255,7 @@ void bankChange(bool up)
         btnNbr1 = btnState->getSingleButtonPressed();
         if (btnNbr1 > 0 && bank->buttons[btnNbr1 - 1].isPatch) // Load selected bank
         {
-            sendBankMidi();
+            midiTransmitter->sendPcMsg(bank->pcMessage, true); // Send Bank Midi
 
             dataState.bnk          = tmpBankNbr;
             dataState.btn          = btnNbr1;
@@ -326,94 +328,44 @@ void drawPlayBank(const int bnkNbr, const bool inverted)
     screen.drawPlayBank(bankNumber, bank->name, inverted);
 }
 
-void sendBankMidi()
-{
-    if (bank->pcMessage.channel > 0)
-    {
-        usbMIDI.sendProgramChange(bank->pcMessage.valueOn, bank->pcMessage.channel);
-    }
-}
-
 void sendButtonMidi(Button button, BtnPushState btnState)
 {
     for (uint8_t i = 0; i < NUMBER_OF_MIDI_MSG; i++)
     {
-        if (button.pcMessages[i].channel > 0)
+        switch (btnState)
         {
-            switch (btnState)
-            {
-                case VERY_FIRST_BTN_PUSH:
-                    usbMIDI.sendProgramChange(button.pcMessages[i].valueOn, button.pcMessages[i].channel);
-                    break;
+            case VERY_FIRST_BTN_PUSH:
+                midiTransmitter->sendPcMsg(button.pcMessages[i], true);
+                break;
 
-                case FIRST_BTN_PUSH:
+            case FIRST_BTN_PUSH:
+                if (button.pcMessages[i].valueOn != button.pcMessages[i].valueOff) // If the On and Off values are the same, the PC is not (re)sent.
+                    midiTransmitter->sendPcMsg(button.pcMessages[i], true);
+                break;
+
+            case SECOND_BTN_PUSH:
+                if (!button.isPatch || button.isSecondPushEnabled)                     // Toggle or secondPushEnabled
                     if (button.pcMessages[i].valueOn != button.pcMessages[i].valueOff) // If the On and Off values are the same, the PC is not (re)sent.
-                        usbMIDI.sendProgramChange(button.pcMessages[i].valueOn, button.pcMessages[i].channel);
-
-                    break;
-
-                case SECOND_BTN_PUSH:
-                    if (!button.isPatch || button.isSecondPushEnabled)                     // Toggle or secondPushEnabled
-                        if (button.pcMessages[i].valueOn != button.pcMessages[i].valueOff) // If the On and Off values are the same, the PC is not (re)sent.
-                            usbMIDI.sendProgramChange(button.pcMessages[i].valueOff, button.pcMessages[i].channel);
-
-                    break;
-            }
+                        midiTransmitter->sendPcMsg(button.pcMessages[i], false);
+                break;
         }
     }
 
     for (uint8_t i = 0; i < NUMBER_OF_MIDI_MSG; i++)
     {
-        if (button.ccMessages[i].channel > 0 && !button.ccMessages[i].ctrlByExp) // Midichannel == 0: Disabled. CtrlByExp: Controlled continously by expression pedal
+        switch (btnState)
         {
-            switch (btnState)
-            {
-                case VERY_FIRST_BTN_PUSH:
-                case FIRST_BTN_PUSH:
-                    usbMIDI.sendControlChange(button.ccMessages[i].ccNumber, button.ccMessages[i].minValue, button.ccMessages[i].channel);
-                    break;
+            case VERY_FIRST_BTN_PUSH:
+            case FIRST_BTN_PUSH:
+                midiTransmitter->sendCcMsg(button.ccMessages[i], true, button.ccMessages[i].useMaxValAsCcNbr);
+                break;
 
-                case SECOND_BTN_PUSH:
-                    if (!button.isPatch || button.isSecondPushEnabled)
-                    {
-                        if (button.ccMessages[i].useMaxValAsCcNbr)
-                        {
-                            usbMIDI.sendControlChange(button.ccMessages[i].maxValue, 0, button.ccMessages[i].channel);
-                        }
-                        else
-                        {
-                            usbMIDI.sendControlChange(button.ccMessages[i].ccNumber, button.ccMessages[i].maxValue, button.ccMessages[i].channel);
-                        }
-                    }
-
-                    break;
-            }
-        }
-    }
-}
-
-void sendExpressionMidi()
-{
-    int expVal = map(analogRead(EXP_PIN), 0, 1013, 0, 127);
-    expVal     = constrain(expVal, 0, 127);
-    if (expVal == prevExpValue)
-        return;
-
-    prevExpValue = expVal;
-
-    uint8_t mappedValue;
-    for (uint8_t i = 0; i < NUMBER_OF_BUTTONS; i++)
-    {
-        if ((!bank->buttons[i].isPatch && toggleStates[i]) || i + 1 == dataState.btn) // Button is a toggle that is on, or the currently selected patch
-        {
-            for (uint8_t j = 0; j < NUMBER_OF_MIDI_MSG; j++)
-            {
-                if (bank->buttons[i].ccMessages[j].ctrlByExp)
+            case SECOND_BTN_PUSH:
+                if (!button.isPatch || button.isSecondPushEnabled)
                 {
-                    mappedValue = map(expVal, 0, 127, bank->buttons[i].ccMessages[j].minValue, bank->buttons[i].ccMessages[j].maxValue);
-                    usbMIDI.sendControlChange(bank->buttons[i].ccMessages[j].ccNumber, mappedValue, bank->buttons[i].ccMessages[j].channel);
+                    midiTransmitter->sendCcMsg(button.ccMessages[i], false, button.ccMessages[i].useMaxValAsCcNbr);
                 }
-            }
+                break;
         }
     }
 }
@@ -426,8 +378,7 @@ void editMode(uint8_t editBtnNbr)
     bool dirty = false;
     char label[13];
     bankNumToChar(dataState.bnk, label);
-    Button* pButton = nullptr;
-    label[2]        = ' ';
+    label[2] = ' ';
 
     int btn;
     bool loop = true;
@@ -435,15 +386,12 @@ void editMode(uint8_t editBtnNbr)
     if (editBtnNbr > 0) // A field representing a button on the screen was pressed
     {
         loop  = false;
-        dirty = doEditBtn(&bank->buttons[editBtnNbr - 1], editBtnNbr);
+        dirty = doEditBtn(editBtnNbr);
     }
 
     while (loop)
     {
-        for (size_t i = 0; i < BANK_NAME_LENGTH + 1; i++)
-        {
-            label[3 + i] = bank->name[i];
-        }
+        strlcpy(label + 3, bank->name, 13);
         setMainLabelAttributes();
         screen.drawEdit(label, editLabelAttrib);
         screen.waitForButtonReleased();
@@ -465,16 +413,14 @@ void editMode(uint8_t editBtnNbr)
             case 5: // BTN #5
             case 6: // BTN #6
             {
-                pButton = &bank->buttons[btn - 1];
-                dirty   = doEditBtn(pButton, btn) || dirty;
+                dirty = doEditBtn(btn) || dirty;
                 break;
             }
             case 7: // BTN #1
             case 8: // BTN #2
             case 9: // BTN #3
             {
-                pButton = &bank->buttons[btn - 7];
-                dirty   = doEditBtn(pButton, btn - 6) || dirty;
+                dirty = doEditBtn(btn - 6) || dirty;
                 break;
             }
         }
@@ -686,10 +632,7 @@ bool doEditBank()
 
     while (loop)
     {
-        for (size_t i = 0; i < BANK_NAME_LENGTH + 1; i++)
-        {
-            bankName[3 + i] = bank->name[i];
-        }
+        strlcpy(bankName + 3, bank->name, 13);
         setBankLabelAttributes();
         screen.drawEdit(bankName, editLabelAttrib);
         screen.waitForButtonReleased();
@@ -754,12 +697,12 @@ bool doEditBank()
     return dirty;
 }
 
-bool doEditBtn(Button* button, const uint8_t btnNbr)
+bool doEditBtn(const uint8_t btnNbr)
 {
     int btn;
-    bool loop  = true;
-    bool dirty = false;
-
+    bool loop      = true;
+    bool dirty     = false;
+    Button* button = &bank->buttons[btnNbr - 1];
     String label;
     String sVal;
     char label1[16];
@@ -770,10 +713,11 @@ bool doEditBtn(Button* button, const uint8_t btnNbr)
 
     while (loop)
     {
-        for (size_t i = 0; i < BUTTON_NAME_LENGTH + 1; i++)
+        strlcpy(btnName + 2, button->name, 13);
+        /*for (size_t i = 0; i < BUTTON_NAME_LENGTH + 1; i++)
         {
             btnName[2 + i] = button->name[i];
-        }
+        }*/
         setButtonLabelAttributes(button);
         screen.drawEdit(btnName, editLabelAttrib);
         screen.waitForButtonReleased();
@@ -860,10 +804,11 @@ bool doPcCcEdit(Button* button, uint8_t btnNbr, PcCcEnum pcCc)
     char btnName[13];
     itoa(btnNbr, btnName, 10);
     btnName[1] = ' ';
-    for (size_t i = 0; i < BUTTON_NAME_LENGTH + 1; i++)
+    strlcpy(btnName + 2, button->name, 13);
+    /*for (size_t i = 0; i < BUTTON_NAME_LENGTH + 1; i++)
     {
         btnName[2 + i] = button->name[i];
-    }
+    }*/
 
     while (loop)
     {
@@ -922,41 +867,25 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
     uint8_t nVal;
     uint16_t newVal;
     char label[13];
-    char cPcCcIndex[3];
-    char btnName[13];
     PcMsg* pcMsg = nullptr;
     CcMsg* ccMsg = nullptr;
 
-    itoa(pcCcNbr, cPcCcIndex, 10);
-    itoa(btnNbr, btnName, 10);
-    label[0]  = 'B';
-    label[1]  = 'T';
-    label[2]  = 'N';
-    label[3]  = ' ';
-    label[4]  = btnName[0];
-    label[5]  = btnName[1];
-    label[6]  = ' ';
-    label[8]  = 'C';
-    label[9]  = '#';
-    label[10] = cPcCcIndex[0];
-    label[11] = cPcCcIndex[1];
-    label[12] = cPcCcIndex[2];
-    if (label[5] == '\0')
-        label[5] = ' ';
+    strlcpy(label, "BTN#", 13);
+    itoa(btnNbr, label + 4, 10);
     switch (pcCc)
     {
         case PC_1_8:
         case PC_9_16:
-            label[7] = 'P';
-            pc       = true;
+            strlcpy(label + 5, "  PC#", 13);
+            pc = true;
             break;
         case CC_1_8:
         case CC_9_16:
-            label[7] = 'C';
-
+            strlcpy(label + 5, "  CC#", 13);
             pc = false;
             break;
     }
+    itoa(pcCcNbr, label + 10, 10);
 
     while (loop)
     {

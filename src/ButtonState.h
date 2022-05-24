@@ -11,22 +11,22 @@ class ButtonState
 
     bool isBankDownState();
     bool isBankUpState();
-    byte getSingleButtonPressed(bool resetState = false);
+    uint8_t getSingleButtonPressed(bool resetState = false);
 
  private:
     ButtonState(); // Singleton
     void determineState();
-    byte getButtonPressed();
+    uint8_t getButtonPressed();
 
     static ButtonState* instance;
     static const byte NUMBER_OF_PUSHBUTTONS = 6;
     PushButton* buttons[NUMBER_OF_PUSHBUTTONS];
-    byte state;
-    unsigned long lastTime         = 0;
-    const unsigned long stateDelay = 50;
-    const byte FIRST_PIN_NBR       = 33;
-    byte bankChangeButtonPressed   = 0;
-    byte testState = 0;
+    uint8_t state;
+    uint64_t lastTime         = 0;
+    const uint8_t STATE_DELAY = 50;
+    const uint8_t FIRST_PIN_NBR       = 33;
+    uint8_t bankChangeButtonPressed   = 0;
+    //uint8_t testState = 0;
 };
 
 #endif

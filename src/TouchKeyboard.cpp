@@ -106,15 +106,15 @@ void TouchKeyboard::drawKeyboard(const String* contextLabel)
 {
     tft->fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, BACKGROUND_COLOR);
 
-    int x;
-    int y;
+    uint16_t x;
+    uint16_t y;
     if (fullAlpha) // Alphanumeric keyboard
     {
-        for (int j = 1; j < 6; j++)
+        for (uint8_t j = 1; j < 6; j++)
         {
             x = X_SIZE_ALPHA * j;
             y = Y_SIZE_ALPHA * j;
-            for (int i = 0; i < 3; i++)
+            for (uint8_t i = 0; i < 3; i++)
             {
                 tft->drawLine(0, y + i, DISPLAY_WIDTH, y + i, LINE_COLOR);             // horizontal
                 tft->drawLine(x + i, Y_SIZE_ALPHA, x + i, DISPLAY_HEIGHT, LINE_COLOR); // vertical
@@ -123,11 +123,11 @@ void TouchKeyboard::drawKeyboard(const String* contextLabel)
     }
     else
     { // Numeric keys only
-        for (int j = 1; j < 5; j++)
+        for (uint8_t j = 1; j < 5; j++)
         {
             x = X_SIZE_NUM * j;
             y = Y_SIZE_ALPHA + (Y_SIZE_NUM * (j - 1));
-            for (int i = 0; i < 3; i++)
+            for (uint8_t i = 0; i < 3; i++)
             {
                 tft->drawLine(0, y + i, DISPLAY_WIDTH, y + i, LINE_COLOR); // horizontal
                 if (i < 2)
@@ -145,19 +145,19 @@ void TouchKeyboard::drawKeyboard(const String* contextLabel)
     drawKeyboardLabels(true);
 }
 
-void TouchKeyboard::drawKeyboardLabels(bool letters)
+void TouchKeyboard::drawKeyboardLabels(const bool letters)
 {
     tft->setTextColor(TFT_BLACK);
     tft->setTextSize(2);
-    byte cnt = 0;
-    int y    = 0;
-    int x    = 0;
+    uint8_t cnt = 0;
+    uint16_t y    = 0;
+    uint16_t x    = 0;
     if (fullAlpha)
     {
-        for (int j = 1; j < 6; j++)
+        for (uint8_t j = 1; j < 6; j++)
         {
             y = 15 + (Y_SIZE_ALPHA * j);
-            for (int i = 0; i < 6; i++)
+            for (uint8_t i = 0; i < 6; i++)
             {
                 x = 10 + (X_SIZE_ALPHA * i);
                 tft->fillRect(x, y, Y_SIZE_ALPHA, 20, BACKGROUND_COLOR);
@@ -188,10 +188,10 @@ void TouchKeyboard::drawKeyboardLabels(bool letters)
     }
     else // Numeric keys only
     {
-        for (int j = 1; j < 5; j++)
+        for (uint8_t j = 1; j < 5; j++)
         {
             y = 10 + (Y_SIZE_NUM * j);
-            for (int i = 0; i < 3; i++)
+            for (uint8_t i = 0; i < 3; i++)
             {
                 x = 35 + (X_SIZE_NUM * i);
                 tft->fillRect(x, y, Y_SIZE_NUM, 20, BACKGROUND_COLOR);
@@ -219,9 +219,9 @@ void TouchKeyboard::drawKeyboardInputText(const String* txt)
     tft->print(*txt);
 }
 
-void TouchKeyboard::replaceKeyboardInputText(int pos, const String* txt)
+void TouchKeyboard::replaceKeyboardInputText(const uint8_t pos, const String* txt)
 {
-    int x = KEYBOARD_INPUT_TXT_X + (KEYBOARD_INPUT_FONT_WIDTH * pos);
+    uint16_t x = KEYBOARD_INPUT_TXT_X + (KEYBOARD_INPUT_FONT_WIDTH * pos);
     tft->fillRect(x, 0, KEYBOARD_INPUT_FONT_WIDTH, 33, BACKGROUND_COLOR);
     tft->setTextColor(TFT_BLACK);
     tft->setTextSize(3);
@@ -229,7 +229,7 @@ void TouchKeyboard::replaceKeyboardInputText(int pos, const String* txt)
     tft->print(*txt);
 }
 
-int TouchKeyboard::moveCursor(bool forward, int currentPos, int maxPos)
+int TouchKeyboard::moveCursor(const bool forward, uint8_t currentPos, const uint8_t maxPos)
 {
     if (forward)
     {
@@ -250,21 +250,21 @@ int TouchKeyboard::moveCursor(bool forward, int currentPos, int maxPos)
     return currentPos;
 }
 
-void TouchKeyboard::drawCursor(byte pos)
+void TouchKeyboard::drawCursor(const byte pos)
 {
-    const int x            = KEYBOARD_INPUT_TXT_X + (KEYBOARD_INPUT_FONT_WIDTH * pos);
-    const int y            = 34;
-    const int cursorLength = 14;
+    const uint16_t x            = KEYBOARD_INPUT_TXT_X + (KEYBOARD_INPUT_FONT_WIDTH * pos);
+    const uint16_t y            = 34;
+    const uint8_t cursorLength = 14;
 
     tft->fillRect(KEYBOARD_INPUT_TXT_X, y, DISPLAY_WIDTH - KEYBOARD_INPUT_TXT_X, 3, BACKGROUND_COLOR);
 
-    for (int i = 0; i < 3; i++)
+    for (uint8_t i = 0; i < 3; i++)
     {
         tft->drawLine(x, y + i, x + cursorLength, y + i, TFT_BLACK);
     }
 }
 
-String TouchKeyboard::mapPointToKeyboardButton(Point point, bool letters)
+String TouchKeyboard::mapPointToKeyboardButton(const Point point, const bool letters)
 {
     if (point.y < Y_SIZE_ALPHA)
         return NOT_A_BUTTON;
@@ -275,11 +275,11 @@ String TouchKeyboard::mapPointToKeyboardButton(Point point, bool letters)
         return mapPointToNumButton(point);
 }
 
-String TouchKeyboard::mapPointToAlphaButton(Point point, bool letters)
+String TouchKeyboard::mapPointToAlphaButton(const Point point, const bool letters)
 {
-    int x = point.x / X_SIZE_ALPHA + 1;
-    int y = (point.y - Y_SIZE_ALPHA) / Y_SIZE_ALPHA;
-    int i = x + (y * 6) - 1;
+    uint16_t x = point.x / X_SIZE_ALPHA + 1;
+    uint16_t y = (point.y - Y_SIZE_ALPHA) / Y_SIZE_ALPHA;
+    uint8_t i = x + (y * 6) - 1;
     if (i < 0 || i > 29)
         return NOT_A_BUTTON;
 
@@ -289,11 +289,11 @@ String TouchKeyboard::mapPointToAlphaButton(Point point, bool letters)
     return NUMBERS_30[i];
 }
 
-String TouchKeyboard::mapPointToNumButton(Point point)
+String TouchKeyboard::mapPointToNumButton(const Point point)
 {
-    int x = point.x / X_SIZE_NUM + 1;
-    int y = (point.y - Y_SIZE_NUM) / Y_SIZE_NUM;
-    int i = x + (y * 3) - 1;
+    uint16_t x = point.x / X_SIZE_NUM + 1;
+    uint16_t y = (point.y - Y_SIZE_NUM) / Y_SIZE_NUM;
+    uint8_t i = x + (y * 3) - 1;
     if (i < 0 || i > 11)
         return NOT_A_BUTTON;
 

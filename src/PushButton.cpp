@@ -1,6 +1,6 @@
 #include "PushButton.h"
 
-PushButton::PushButton(const byte pin)
+PushButton::PushButton(const uint8_t pin)
 {
     this->pin   = pin;
     lastReading = HIGH;
@@ -8,7 +8,7 @@ PushButton::PushButton(const byte pin)
     update();
 }
 
-byte PushButton::getState()
+uint8_t PushButton::getState()
 {
     update();
     return state;
@@ -21,10 +21,7 @@ bool PushButton::isPressed()
 
 void PushButton::update()
 {
-    // You can handle the debounce of the button directly
-    // in the class, so you don't have to think about it
-    // elsewhere in your code
-    byte newReading = digitalRead(pin);
+    uint8_t newReading = digitalRead(pin);
 
     if (newReading != lastReading)
     {
@@ -32,7 +29,6 @@ void PushButton::update()
     }
     if (millis() - lastDebounceTime > debounceDelay)
     {
-        // Update the 'state' attribute only if debounce is checked
         state = newReading;
     }
     lastReading = newReading;

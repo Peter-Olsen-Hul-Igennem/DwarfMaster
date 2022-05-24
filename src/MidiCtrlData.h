@@ -48,25 +48,25 @@ class MidiCtrlData
 {
  public:
     MidiCtrlData();
-    Bank* getBank(const byte bankNbr);
-    void saveBank(const byte bankNbr);
-    void resetBank(const byte bankNbr);
-    void copyBank(const byte bankNbrFrom, const byte bankNbrTo);
-    void resetButton(const byte bankNbr, const byte buttonNbr);                                                      // This buttonNbr is 0 based
-    void copyButton(const byte bankNbrFrom, const byte buttonNbrFrom, const byte bankNbrTo, const byte buttonNbrTo); // This buttonNbrs are 0 based
+    Bank* getBank(const uint8_t bankNbr);
+    void saveBank(const uint8_t bankNbr);
+    void resetBank(const uint8_t bankNbr);
+    void copyBank(const uint8_t bankNbrFrom, const uint8_t bankNbrTo);
+    void resetButton(const uint8_t bankNbr, const uint8_t buttonNbr);                                                      // This buttonNbr is 0 based
+    void copyButton(const uint8_t bankNbrFrom, const uint8_t buttonNbrFrom, const uint8_t bankNbrTo, const uint8_t buttonNbrTo); // This buttonNbrs are 0 based
 
  private:
     void initialize();
-    void initializeBank(const byte bankNbr);
-    void initializeButton(const byte bankNbr, const byte buttonNbr);
-    void copyButtonData(const byte bankNbrFrom, const byte buttonNbrFrom, const byte bankNbrTo, const byte buttonNbrTo);
+    void initializeBank(const uint8_t bankNbr);
+    void initializeButton(const uint8_t bankNbr, const uint8_t buttonNbr);
+    void copyButtonData(const uint8_t bankNbrFrom, const uint8_t buttonNbrFrom, const uint8_t bankNbrTo, const uint8_t buttonNbrTo);
     void deserialize();
-    void deserializeBank(const int id);
+    void deserializeBank(const uint8_t id);
     void serialize();
-    void serializeBank(const int id);
+    void serializeBank(const uint8_t id);
     void loadBankFromFile(const char* filename, DynamicJsonDocument& doc);
     void saveBankToFile(const char* filename, const DynamicJsonDocument& doc);
-    char* buildPath(int id);
+    char* buildPath(const uint8_t id);
     bool verifyVersionFolderExists();
 
     Bank banks[NUMBER_OF_BANKS];

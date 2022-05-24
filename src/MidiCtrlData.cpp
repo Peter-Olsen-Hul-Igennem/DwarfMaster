@@ -21,23 +21,23 @@ MidiCtrlData::MidiCtrlData()
     }
 }
 
-Bank* MidiCtrlData::getBank(byte bankNbr)
+Bank* MidiCtrlData::getBank(uint8_t bankNbr)
 {
     return &banks[bankNbr];
 }
 
-void MidiCtrlData::saveBank(const byte bankNbr)
+void MidiCtrlData::saveBank(const uint8_t bankNbr)
 {
     serializeBank(bankNbr);
 }
 
-void MidiCtrlData::resetBank(const byte bankNbr)
+void MidiCtrlData::resetBank(const uint8_t bankNbr)
 {
     initializeBank(bankNbr);
     serializeBank(bankNbr);
 }
 
-void MidiCtrlData::copyBank(const byte bankNbrFrom, const byte bankNbrTo)
+void MidiCtrlData::copyBank(const uint8_t bankNbrFrom, const uint8_t bankNbrTo)
 {
     strcpy(banks[bankNbrTo].name, banks[bankNbrFrom].name);
     banks[bankNbrTo].pcMessage.channel  = banks[bankNbrFrom].pcMessage.channel;
@@ -51,19 +51,19 @@ void MidiCtrlData::copyBank(const byte bankNbrFrom, const byte bankNbrTo)
     serializeBank(bankNbrTo);
 }
 
-void MidiCtrlData::resetButton(const byte bankNbr, const byte buttonNbr)
+void MidiCtrlData::resetButton(const uint8_t bankNbr, const uint8_t buttonNbr)
 {
     initializeButton(bankNbr, buttonNbr);
     serializeBank(bankNbr);
 }
 
-void MidiCtrlData::copyButton(const byte bankNbrFrom, const byte buttonNbrFrom, const byte bankNbrTo, const byte buttonNbrTo)
+void MidiCtrlData::copyButton(const uint8_t bankNbrFrom, const uint8_t buttonNbrFrom, const uint8_t bankNbrTo, const uint8_t buttonNbrTo)
 {
     copyButtonData(bankNbrFrom, buttonNbrFrom, bankNbrTo, buttonNbrTo);
     serializeBank(bankNbrTo);
 }
 
-void MidiCtrlData::copyButtonData(const byte bankNbrFrom, const byte buttonNbrFrom, const byte bankNbrTo, const byte buttonNbrTo)
+void MidiCtrlData::copyButtonData(const uint8_t bankNbrFrom, const uint8_t buttonNbrFrom, const uint8_t bankNbrTo, const uint8_t buttonNbrTo)
 {
     strcpy(banks[bankNbrTo].buttons[buttonNbrTo].name, banks[bankNbrFrom].buttons[buttonNbrFrom].name);
     banks[bankNbrTo].buttons[buttonNbrTo].isPatch                = banks[bankNbrFrom].buttons[buttonNbrFrom].isPatch;
@@ -92,7 +92,7 @@ void MidiCtrlData::initialize()
     serialize();
 }
 
-void MidiCtrlData::initializeBank(const byte bankNbr)
+void MidiCtrlData::initializeBank(const uint8_t bankNbr)
 {
 
     strcpy(banks[bankNbr].name, BANK);
@@ -105,7 +105,7 @@ void MidiCtrlData::initializeBank(const byte bankNbr)
     }
 }
 
-void MidiCtrlData::initializeButton(const byte bankNbr, const byte buttonNbr)
+void MidiCtrlData::initializeButton(const uint8_t bankNbr, const uint8_t buttonNbr)
 {
     strcpy(banks[bankNbr].buttons[buttonNbr].name, PATCH);
     banks[bankNbr].buttons[buttonNbr].isPatch                = true;
@@ -133,7 +133,7 @@ void MidiCtrlData::deserialize()
     }
 }
 
-void MidiCtrlData::deserializeBank(const int id)
+void MidiCtrlData::deserializeBank(const uint8_t id)
 {
     DynamicJsonDocument doc(ARDUINO_JSON_DOC_SIZE);
     loadBankFromFile(buildPath(id), doc);
@@ -175,7 +175,7 @@ void MidiCtrlData::serialize()
     }
 }
 
-void MidiCtrlData::serializeBank(const int id)
+void MidiCtrlData::serializeBank(const uint8_t id)
 {
     DynamicJsonDocument doc(ARDUINO_JSON_DOC_SIZE);
 
@@ -279,7 +279,7 @@ bool MidiCtrlData::verifyVersionFolderExists()
     return SD.exists(folder);
 }
 
-char* MidiCtrlData::buildPath(int id)
+char* MidiCtrlData::buildPath(const uint8_t id)
 {
     char filename[10];
     strcpy(filename, PREFIX_BANK);

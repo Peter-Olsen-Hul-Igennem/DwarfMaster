@@ -15,14 +15,14 @@ class TouchKeyboard
 
  private:
     void drawKeyboard(const String* contextLabel);
-    void drawKeyboardLabels(bool letters);
+    void drawKeyboardLabels(const bool letters);
     void drawKeyboardInputText(const String* txt);
-    void replaceKeyboardInputText(int pos, const String* txt);
-    void drawCursor(byte pos);
-    int moveCursor(bool forward, int currentPos, int maxPos);
-    String mapPointToKeyboardButton(Point point, bool letters);
-    String mapPointToAlphaButton(Point point, bool letters);
-    String mapPointToNumButton(Point point);
+    void replaceKeyboardInputText(const uint8_t pos, const String* txt);
+    void drawCursor(const uint8_t pos);
+    int moveCursor(const bool forward, uint8_t currentPos, const uint8_t maxPos);
+    String mapPointToKeyboardButton(const Point point, const bool letters);
+    String mapPointToAlphaButton(const Point point, const bool letters);
+    String mapPointToNumButton(const Point point);
 
     const String SPACE_BTN          = "[]";
     const String LETTERS_BTN        = "ABC";

@@ -267,13 +267,6 @@ uint8_t Screen::playBtnPressed()
     return 0;
 }
 
-void Screen::drawEdit(const char* label, const EditLabelAttributes* btnLabels)
-{
-    drawEditGrid();
-    printEditLabel(label);
-    printEditButtonLabels(btnLabels);
-}
-
 int Screen::getButtonPushed()
 {
     uint16_t cnt   = 0;
@@ -313,6 +306,13 @@ void Screen::waitForButtonReleased()
 {
     touch.waitForTouchReleased();
     return;
+}
+
+void Screen::drawEdit(const char* label, const EditLabelAttributes* btnLabels)
+{
+    drawEditGrid();
+    printEditLabel(label);
+    printEditButtonLabels(btnLabels);
 }
 
 void Screen::drawEditGrid()
