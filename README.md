@@ -9,7 +9,7 @@ The controller is build with a Teensy 4.1 as the "brain". The Teensy is fitted w
 The controller has a small touch screen that shows selected bank, patch and other relevant info. The "programming" of the controller is also done with the touch screen.
 
 This repository will hold source files and other documentation related to the build.
-This is not ment to be a community project as the contoller is tailored to my specific needs, but all code is avalible to anyone doing a similar project.
+This is not ment to be a community project as the controller is tailored to my specific needs, but all code is avalible to anyone doing a similar project.
 This is my first project using the Arduino/Teensy platform, and the code shows that I'm learning as I go - so quite a few "hacks" and inconsistencies can be found.
 
 The code is developed using VisualTeensy and Visual Studio Code.
