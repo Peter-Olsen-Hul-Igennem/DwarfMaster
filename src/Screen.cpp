@@ -55,14 +55,53 @@ void Screen::blankScreen()
 
 void Screen::showMessage(const char* msg)
 {
+    Point p;
+    ButtonState* btnState = btnState->getInstance();
+    char message[85];
+    char subString[17];
+    uint8_t cnt = 0;
+    uint8_t i;
+
+    strlcpy(message, msg, 85);
+    
     tft.fillScreen(BACKGROUND_COLOR);
     tft.setTextColor(TFT_BLACK);
     tft.setTextSize(3);
-    tft.setCursor(10, 45);
-    tft.print(String(msg));
+    
+    while (strlen(message) > 0 && cnt < 6)
+    {
+        
+        if (strlen(message) < 18)
+        {
+            tft.setCursor(10, 45 + (cnt * 35));
+            tft.print(String(message));
+            break;
+        }
 
-    Point p;
-    ButtonState* btnState = btnState->getInstance();
+        i = 17;
+        if (' ' != message[i])
+        {
+            i--;
+            for (; i > 0; i--)
+            {
+                if (' ' == message[i])
+                    break;
+            }
+        }
+        Serial.println(i);
+        
+        memcpy(subString, message, (i) * sizeof(char));
+        subString[i] = '\0';
+        
+        memcpy(&message[0], &message[i + 1] , (strlen(message) - i) * sizeof(char));
+
+        tft.setCursor(10, 45 + (cnt * 35));
+        tft.print(String(subString));
+        
+        cnt++;
+    }
+
+    touch.waitForTouchReleased();
     while (true)
     {
         p = touch.getTouchPoint();

@@ -1,15 +1,16 @@
 #ifndef DWARFMASTER_MIDI_CTRL_DATA_H
 #define DWARFMASTER_MIDI_CTRL_DATA_H
 
+#include "GlobalConst.h"
 #include <Arduino.h>
 #include <ArduinoJson.h>
-
+/*
 #define NUMBER_OF_BANKS 100
 #define NUMBER_OF_BUTTONS 6
 #define NUMBER_OF_MIDI_MSG 16
 #define BANK_NAME_LENGTH 9
 #define BUTTON_NAME_LENGTH 10
-
+*/
 struct PcMsg
 {
     char channel;

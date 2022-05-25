@@ -1,5 +1,10 @@
 #include "MidiTransmitter.h"
 
+MidiTransmitter::MidiTransmitter(ExpressionHandler* expressionHandler)
+{
+    this->expHandler = expressionHandler;
+}
+
 void MidiTransmitter::sendPcMsg(const PcMsg msg, const bool first)
 {
     if (msg.channel == 0) // Midichannel == 0: Disabled. 
@@ -32,20 +37,12 @@ void MidiTransmitter::sendCcMsg(const CcMsg msg, const bool first, const bool ma
     }
 }
 
-void MidiTransmitter::sendExpressionMessages(const uint8_t expPin, const Bank* bank, const bool* toggleStates, const uint8_t currentSelectedBtn)
+void MidiTransmitter::sendExpressionMessages(const Bank* bank, const bool* toggleStates, const uint8_t currentSelectedBtn)
 {
-    uint64_t now = millis();
-
-    if (now - prevReadTime < 100) // Limiting the number of reads to 10 pr. second.
+    uint8_t expVal;
+    if (!expHandler->readAndMapValue(&expVal))
         return;
-
-    uint8_t expVal = map(analogRead(expPin), 0, 1013, 0, 127);
-    if (expVal == prevExpValue)
-        return;
-
-    prevReadTime = now;
-    prevExpValue = expVal;
-
+    
     uint8_t mappedValue;
     for (uint8_t i = 0; i < NUMBER_OF_BUTTONS; i++)
     {
@@ -62,3 +59,30 @@ void MidiTransmitter::sendExpressionMessages(const uint8_t expPin, const Bank* b
         }
     }
 }
+/*
+bool MidiTransmitter::readAndMapValue(uint8_t* result)
+{
+    int readValue = analogRead(expPin);
+    
+    if(abs(readValue - prevReadValue) < POT_THRESHOLD) // small potentiometer differences (noise) are disregarded
+        return false;
+    prevReadValue = readValue;
+ 
+    uint8_t expVal = map(readValue, 0, 1013, 0, 127);
+    if (expVal == prevExpValue) // if read value is mapped to the same value as the previous one it's disregarded
+        return false;
+
+    prevExpValue = expVal;
+
+    for(uint8_t i=0; i<HIST_BUFFER_LENGTH; i++) // if the mapped value is in the "history buffer" it's disregarded, this "smoothes" the action of the pedal.
+    {
+        if(histBuffer[i] == expVal)
+            return false;
+    }
+    memcpy(&histBuffer[0], &histBuffer[1], sizeof(uint8_t) * (HIST_BUFFER_LENGTH - 1)); // moving the content of the buffer one element back
+    histBuffer[HIST_BUFFER_LENGTH - 1] = expVal;
+
+    *result = expVal;
+
+    return true;
+}*/

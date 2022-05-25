@@ -1,4 +1,5 @@
 #include "ButtonState.h"
+#include "ExpressionHandler.h"
 #include "GlobalConst.h"
 #include "MidiCtrlData.h"
 #include "MidiTransmitter.h"
@@ -66,17 +67,19 @@ MidiCtrlData* mcd;
 Bank* bank;
 ButtonState* btnState = btnState->getInstance();
 MidiTransmitter* midiTransmitter;
+ExpressionHandler* expressionHandler;
 
 struct DataState
 {
     uint8_t bnk;
     uint8_t btn;
     BtnPushState btnPushState = VERY_FIRST_BTN_PUSH;
+    uint16_t expMin;
+    uint16_t expMax;
 };
 DataState dataState;
 
 bool toggleStates[NUMBER_OF_BUTTONS]; // Keeping track of the states of the toggle switches (buttons not set up to be patches). True is ON.
-uint8_t prevExpValue = 128;           // Range is 0-127 so initialising with 128 guaranties that the read value is different.
 
 void setup()
 {
@@ -87,12 +90,14 @@ void setup()
     mcd  = new MidiCtrlData();
     bank = mcd->getBank(dataState.bnk);
 
-    midiTransmitter = new MidiTransmitter();
-
+    expressionHandler = new ExpressionHandler(EXP_PIN, dataState.expMin, dataState.expMax);
+    midiTransmitter   = new MidiTransmitter(expressionHandler);
+    
     initHousekeepingVariables();
 
     screen.showWaitScreen();
-
+    screen.waitForButtonReleased();
+    
     sendButtonMidi(bank->buttons[dataState.btn - 1], dataState.btnPushState);
 
     drawPlayScreen();
@@ -210,7 +215,7 @@ void playMode()
     }
 
     // Send Expressionpedal midi
-    midiTransmitter->sendExpressionMessages(EXP_PIN, bank, toggleStates, dataState.btn);
+    midiTransmitter->sendExpressionMessages(bank, toggleStates, dataState.btn);
 }
 
 void bankChange(bool up)
@@ -493,8 +498,26 @@ void doEditUtility()
                 }
                 break;
             }
-            case 4:
+            case 4: // EXP CALIBRATION
+            {
+                screen.showMessage("MOVE PEDAL TO THE <MIN> POSITION AND PRESS THE SCREEN");
+                dataState.expMin = expressionHandler->readCalibrationValue(false);
+                screen.showMessage("MOVE PEDAL TO THE <MAX> POSITION AND PRESS THE SCREEN");
+                dataState.expMax = expressionHandler->readCalibrationValue(true);
+                
+                char msg[85];
+                char val[5];
+                strlcpy(msg, "MIN: ", 85);
+                itoa(dataState.expMin, val, 10);
+                strlcpy(msg + strlen(msg), val, 85);
+                strlcpy(msg + strlen(msg), "         MAX: ", 85);
+                itoa(dataState.expMax, val, 10);
+                strlcpy(msg + strlen(msg), val, 85);
+                screen.showMessage(msg);
+                
+                saveDataStateInfo();
                 break;
+            }
             case 5: // COPY BUTTON
             {
                 label           = String("BTN FROM");
@@ -1077,6 +1100,10 @@ void loadDataStateInfo()
         dataState.btn          = 1;
         dataState.btnPushState = VERY_FIRST_BTN_PUSH;
     }
+    if (dataState.expMax < 0 || dataState.expMax > 1023)
+        dataState.expMax = 1023;
+    if (dataState.expMin < 0 || dataState.expMin > 1023)
+        dataState.expMin = 0;
 }
 
 void saveDataStateInfo()
@@ -1098,8 +1125,6 @@ void bankNumToChar(uint8_t num, char* buf)
 
 void initHousekeepingVariables()
 {
-    prevExpValue = 128;
-
     for (size_t i = 0; i < NUMBER_OF_BUTTONS; i++)
     {
         toggleStates[i] = !bank->buttons[i].isPatch && bank->buttons[i].isInitialToggleStateOn; // true: Button is a toggle and initialToggleOn is true
@@ -1133,7 +1158,7 @@ void setUtilityLabelAttributes()
     strlcpy(editLabelAttrib[0].label1, "EXIT", 9);
     strlcpy(editLabelAttrib[1].label1, "COPY BNK", 9);
     strlcpy(editLabelAttrib[2].label1, "RSET BNK", 9);
-    strlcpy(editLabelAttrib[3].label1, " ", 9);
+    strlcpy(editLabelAttrib[3].label1, "EXP", 9);
     strlcpy(editLabelAttrib[4].label1, "COPY BTN", 9);
     strlcpy(editLabelAttrib[5].label1, "RSET BTN", 9);
     strlcpy(editLabelAttrib[6].label1, "SEND CC", 9);
@@ -1145,6 +1170,7 @@ void setUtilityLabelAttributes()
         strlcpy(editLabelAttrib[i].label2, " ", LABEL_2_LENGTH);
         editLabelAttrib[i].color = 0;
     }
+    strlcpy(editLabelAttrib[3].label2, "CALIBRATION", LABEL_2_LENGTH);
 }
 
 void setBankLabelAttributes()
