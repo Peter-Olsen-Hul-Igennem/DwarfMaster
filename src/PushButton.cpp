@@ -8,15 +8,10 @@ PushButton::PushButton(const uint8_t pin)
     update();
 }
 
-uint8_t PushButton::getState()
-{
-    update();
-    return state;
-}
-
 bool PushButton::isPressed()
 {
-    return (getState() == LOW);
+    update();
+    return (state == LOW);
 }
 
 void PushButton::update()

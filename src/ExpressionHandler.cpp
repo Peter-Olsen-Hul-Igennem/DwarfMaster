@@ -3,11 +3,8 @@
 ExpressionHandler::ExpressionHandler(const uint8_t expressionPin, const uint16_t minCalibratedValue, const uint16_t maxCalibratedValue)
 {
     exprPin = expressionPin;
-    Serial.println(exprPin);
     minCalibratedVal = minCalibratedValue;
-    Serial.println(minCalibratedVal);
     maxCalibratedVal = maxCalibratedValue;
-    Serial.println(maxCalibratedVal);
 }
     
 bool ExpressionHandler::readAndMapValue(uint8_t* result)

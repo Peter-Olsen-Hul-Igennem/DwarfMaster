@@ -7,7 +7,6 @@ class PushButton
 {
  public:
     PushButton(const uint8_t pin);
-    uint8_t getState();
     bool isPressed();
 
  private:

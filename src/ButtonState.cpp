@@ -14,10 +14,60 @@ ButtonState* ButtonState::getInstance()
 ButtonState::ButtonState()
 {
     state = 0;
-    for (byte i = 0; i < NUMBER_OF_PUSHBUTTONS; i++)
+    for (uint8_t i = 0; i < NUMBER_OF_PUSHBUTTONS; i++)
     {
         buttons[i] = new PushButton(FIRST_PIN_NBR + i); // Pins used for buttons must be in consecutive order
     }
+}
+
+
+bool ButtonState::isBankDownState()
+{
+    determineState();
+    if (state == 3)
+    {
+        state = 6;
+        return true;
+    }
+    return false;
+}
+
+bool ButtonState::isBankUpState()
+{
+    determineState();
+    if (state == 4) 
+    {
+        state = 6;
+        return true;
+    }
+
+    return false;
+}
+
+uint8_t ButtonState::getSingleButtonPressed(bool resetState)
+{
+    determineState();
+    if (state == 2)
+    {
+        state = 6;
+        lastSingleButtonPressed = getButtonPressed();
+        return lastSingleButtonPressed;
+    }
+    
+    if (resetState && state > 2) // Used after bank change to force two pushes of the same button before sending patch midi data
+        state = 6;
+     
+    return 0;
+}
+
+bool ButtonState::isButtonJustReleased(uint8_t btnNbr)
+{
+    if (btnNbr == lastSingleButtonPressed && !buttons[btnNbr - 1]->isPressed())
+    {
+        lastSingleButtonPressed = 0;
+        return true;
+    }
+    return false;
 }
 
 void ButtonState::determineState()
@@ -32,7 +82,7 @@ void ButtonState::determineState()
      * 5: An "invalid" combiantion of buttons pressed.
      * 6: A state has been returned (bankUp/bankDown/btnPressed). Now we wait for a return to state 0 (zero)
      */
-    byte cnt = 0;
+    uint8_t cnt = 0;
     switch (state)
     {
         case 0:
@@ -44,7 +94,7 @@ void ButtonState::determineState()
             break;
 
         case 1:
-            for (byte i = 0; i < NUMBER_OF_PUSHBUTTONS; i++)
+            for (uint8_t i = 0; i < NUMBER_OF_PUSHBUTTONS; i++)
             {
                 if (buttons[i]->isPressed())
                     cnt++;
@@ -77,7 +127,7 @@ void ButtonState::determineState()
 
         case 5:
         case 6:
-            for (byte i = 0; i < NUMBER_OF_PUSHBUTTONS; i++)
+            for (uint8_t i = 0; i < NUMBER_OF_PUSHBUTTONS; i++)
             {
                 if (buttons[i]->isPressed())
                     cnt++;
@@ -91,50 +141,9 @@ void ButtonState::determineState()
     }
 }
 
-
-
-bool ButtonState::isBankDownState()
+uint8_t ButtonState::getButtonPressed()
 {
-    determineState();
-    if (state == 3)
-    {
-        state = 6;
-        return true;
-    }
-    return false;
-}
-
-bool ButtonState::isBankUpState()
-{
-    determineState();
-    if (state == 4) 
-    {
-        state = 6;
-        return true;
-    }
-
-    return false;
-}
-
-byte ButtonState::getSingleButtonPressed(bool resetState)
-{
-    determineState();
-
-    if (state == 2)
-    {
-        state = 6;
-        return getButtonPressed();
-    }
-    
-    if (resetState && state > 2) // Used after bank change to force two pushes of the same button before sending patch midi data
-        state = 6;
-     
-    return 0;
-}
-
-byte ButtonState::getButtonPressed()
-{
-    for (byte i = 0; i < NUMBER_OF_PUSHBUTTONS; i++)
+    for (uint8_t i = 0; i < NUMBER_OF_PUSHBUTTONS; i++)
     {
         if (buttons[i]->isPressed())
             return i + 1;

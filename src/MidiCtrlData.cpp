@@ -5,20 +5,22 @@
 
 MidiCtrlData::MidiCtrlData()
 {
-
     folder = strdup(PREFIX_VER);
     strcat(folder, MIDI_CTRL_DATA_VERSION);
 
     if (verifyVersionFolderExists())
     {
-        Serial.println("Version folder OK");
+        Serial.print("Version folder OK: ");
+        Serial.println(folder); 
         deserialize();
     }
     else
     {
-        Serial.println("Version folder ERR");
+        Serial.print("Version folder ERR: ");
+        Serial.println(folder);
         initialize();
-    }
+        serialize();
+    }  
 }
 
 Bank* MidiCtrlData::getBank(uint8_t bankNbr)
@@ -69,6 +71,7 @@ void MidiCtrlData::copyButtonData(const uint8_t bankNbrFrom, const uint8_t butto
     banks[bankNbrTo].buttons[buttonNbrTo].isPatch                = banks[bankNbrFrom].buttons[buttonNbrFrom].isPatch;
     banks[bankNbrTo].buttons[buttonNbrTo].isSecondPushEnabled    = banks[bankNbrFrom].buttons[buttonNbrFrom].isSecondPushEnabled;
     banks[bankNbrTo].buttons[buttonNbrTo].isInitialToggleStateOn = banks[bankNbrFrom].buttons[buttonNbrFrom].isInitialToggleStateOn;
+    banks[bankNbrTo].buttons[buttonNbrTo].isLatching             = banks[bankNbrFrom].buttons[buttonNbrFrom].isLatching;
     for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
     {
         banks[bankNbrTo].buttons[buttonNbrTo].pcMessages[k].channel          = banks[bankNbrFrom].buttons[buttonNbrFrom].pcMessages[k].channel;
@@ -89,7 +92,6 @@ void MidiCtrlData::initialize()
     {
         initializeBank(i);
     }
-    serialize();
 }
 
 void MidiCtrlData::initializeBank(const uint8_t bankNbr)
@@ -111,6 +113,7 @@ void MidiCtrlData::initializeButton(const uint8_t bankNbr, const uint8_t buttonN
     banks[bankNbr].buttons[buttonNbr].isPatch                = true;
     banks[bankNbr].buttons[buttonNbr].isSecondPushEnabled    = true;
     banks[bankNbr].buttons[buttonNbr].isInitialToggleStateOn = false;
+    banks[bankNbr].buttons[buttonNbr].isLatching             = true;
     for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
     {
         banks[bankNbr].buttons[buttonNbr].pcMessages[k].channel          = 0;
@@ -150,6 +153,7 @@ void MidiCtrlData::deserializeBank(const uint8_t id)
         banks[id].buttons[j].isPatch                = btn[IS_PATCH];
         banks[id].buttons[j].isSecondPushEnabled    = btn[IS_SECOND_PUSH_ENABLED];
         banks[id].buttons[j].isInitialToggleStateOn = btn[IS_INITIAL_TOGGLE_STATE_ON];
+        banks[id].buttons[j].isLatching             = btn[IS_LATCHING];
 
         for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
         {
@@ -191,6 +195,7 @@ void MidiCtrlData::serializeBank(const uint8_t id)
         btn[IS_PATCH]                   = banks[id].buttons[j].isPatch;
         btn[IS_SECOND_PUSH_ENABLED]     = banks[id].buttons[j].isSecondPushEnabled;
         btn[IS_INITIAL_TOGGLE_STATE_ON] = banks[id].buttons[j].isInitialToggleStateOn;
+        btn[IS_LATCHING]                = banks[id].buttons[j].isLatching;
 
         for (int k = 0; k < NUMBER_OF_MIDI_MSG; k++)
         {

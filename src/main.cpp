@@ -48,6 +48,7 @@ void loadDataStateInfo();
 void saveDataStateInfo();
 void bankNumToChar(uint8_t num, char* buf);
 void initHousekeepingVariables();
+void togglePushBtnState(uint8_t btnNbr);
 
 void setMainLabelAttributes();
 void setUtilityLabelAttributes();
@@ -92,12 +93,12 @@ void setup()
 
     expressionHandler = new ExpressionHandler(EXP_PIN, dataState.expMin, dataState.expMax);
     midiTransmitter   = new MidiTransmitter(expressionHandler);
-    
+
     initHousekeepingVariables();
 
     screen.showWaitScreen();
     screen.waitForButtonReleased();
-    
+
     sendButtonMidi(bank->buttons[dataState.btn - 1], dataState.btnPushState);
 
     drawPlayScreen();
@@ -174,30 +175,15 @@ void loop()
 void playMode()
 {
     byte btnNbr = btnState->getSingleButtonPressed();
-    if (btnNbr > 0)
+    if (btnNbr > 0) // A footswitch was pushed
     {
         if (bank->buttons[btnNbr - 1].isPatch)
         {
             if (btnNbr == dataState.btn)
-            {
-                switch (dataState.btnPushState)
-                {
-                    case VERY_FIRST_BTN_PUSH:
-                    case FIRST_BTN_PUSH:
-                        if (bank->buttons[btnNbr - 1].isSecondPushEnabled)
-                            dataState.btnPushState = SECOND_BTN_PUSH;
-                        break;
-
-                    case SECOND_BTN_PUSH:
-                        dataState.btnPushState = FIRST_BTN_PUSH;
-                        break;
-                }
-            }
+                togglePushBtnState(btnNbr - 1);
             else
-            {
                 dataState.btnPushState = VERY_FIRST_BTN_PUSH;
-            }
-
+            
             sendButtonMidi(bank->buttons[btnNbr - 1], dataState.btnPushState);
             dataState.btn = btnNbr;
             saveDataStateInfo();
@@ -212,6 +198,22 @@ void playMode()
         }
 
         drawPlayBtns(false);
+    }
+    else
+    {
+        for (uint8_t i = 0; i < NUMBER_OF_BUTTONS; i++)
+        {
+            if (!bank->buttons[i].isLatching && btnState->isButtonJustReleased(i + 1))
+            {
+                if (bank->buttons[i].isPatch)
+                    togglePushBtnState(i);
+                else
+                    toggleStates[i] = !toggleStates[i];
+                
+                sendButtonMidi(bank->buttons[i], SECOND_BTN_PUSH);
+                drawPlayBtns(false);
+            }
+        }
     }
 
     // Send Expressionpedal midi
@@ -504,7 +506,7 @@ void doEditUtility()
                 dataState.expMin = expressionHandler->readCalibrationValue(false);
                 screen.showMessage("MOVE PEDAL TO THE <MAX> POSITION AND PRESS THE SCREEN");
                 dataState.expMax = expressionHandler->readCalibrationValue(true);
-                
+
                 char msg[85];
                 char val[5];
                 strlcpy(msg, "MIN: ", 85);
@@ -514,7 +516,7 @@ void doEditUtility()
                 itoa(dataState.expMax, val, 10);
                 strlcpy(msg + strlen(msg), val, 85);
                 screen.showMessage(msg);
-                
+
                 saveDataStateInfo();
                 break;
             }
@@ -728,8 +730,6 @@ bool doEditBtn(const uint8_t btnNbr)
     Button* button = &bank->buttons[btnNbr - 1];
     String label;
     String sVal;
-    char label1[16];
-    char label2[16];
     char btnName[13];
     itoa(btnNbr, btnName, 10);
     btnName[1] = ' ';
@@ -737,10 +737,6 @@ bool doEditBtn(const uint8_t btnNbr)
     while (loop)
     {
         strlcpy(btnName + 2, button->name, 13);
-        /*for (size_t i = 0; i < BUTTON_NAME_LENGTH + 1; i++)
-        {
-            btnName[2 + i] = button->name[i];
-        }*/
         setButtonLabelAttributes(button);
         screen.drawEdit(btnName, editLabelAttrib);
         screen.waitForButtonReleased();
@@ -766,14 +762,8 @@ bool doEditBtn(const uint8_t btnNbr)
             }
             case 3: // PATCH
             {
-                strcpy(label1, "   PATCH");
-                strcpy(label2, "   TOGGLE");
-                bool result = screen.getBinaryInputFromUser(label1, label2, button->isPatch);
-                if (result != button->isPatch)
-                {
-                    button->isPatch = result;
-                    dirty           = true;
-                }
+                button->isPatch = !button->isPatch;
+                dirty           = true;
                 break;
             }
             case 4: // PC 1-8
@@ -782,16 +772,13 @@ bool doEditBtn(const uint8_t btnNbr)
             case 5: // PC 9-16
                 dirty = doPcCcEdit(button, btnNbr, PC_9_16) || dirty;
                 break;
-            case 6: // 2. PUSH
+            case 6: // 2. PUSH + Initial togglestate
             {
-                strcpy(label1, " 2. PUSH ON");
-                strcpy(label2, " 2. PUSH OFF");
-                bool result = screen.getBinaryInputFromUser(label1, label2, button->isSecondPushEnabled);
-                if (result != button->isSecondPushEnabled)
-                {
-                    button->isSecondPushEnabled = result;
-                    dirty                       = true;
-                }
+                if (button->isPatch)
+                    button->isSecondPushEnabled = !button->isSecondPushEnabled;
+                else
+                    button->isInitialToggleStateOn = !button->isInitialToggleStateOn;
+                dirty = true;
                 break;
             }
             case 7: // CC 1-8
@@ -800,15 +787,20 @@ bool doEditBtn(const uint8_t btnNbr)
             case 8: // CC 9-16
                 dirty = doPcCcEdit(button, btnNbr, CC_9_16) || dirty;
                 break;
-            case 9: // TOGL ON
+            case 9: // LATCH
             {
-                strcpy(label1, "INI TOGL ON");
-                strcpy(label2, "INI TOGL OFF");
-                bool result = screen.getBinaryInputFromUser(label1, label2, button->isInitialToggleStateOn);
-                if (result != button->isInitialToggleStateOn)
+                if (button->isPatch)
                 {
-                    button->isInitialToggleStateOn = result;
-                    dirty                          = true;
+                    if (button->isSecondPushEnabled)
+                    {
+                        button->isLatching = !button->isLatching;
+                        dirty              = true;
+                    }
+                }
+                else
+                {
+                    button->isLatching = !button->isLatching;
+                    dirty              = true;
                 }
                 break;
             }
@@ -828,10 +820,6 @@ bool doPcCcEdit(Button* button, uint8_t btnNbr, PcCcEnum pcCc)
     itoa(btnNbr, btnName, 10);
     btnName[1] = ' ';
     strlcpy(btnName + 2, button->name, 13);
-    /*for (size_t i = 0; i < BUTTON_NAME_LENGTH + 1; i++)
-    {
-        btnName[2 + i] = button->name[i];
-    }*/
 
     while (loop)
     {
@@ -1050,16 +1038,8 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
                 {
                     break;
                 }
-                char label1[16];
-                char label2[16];
-                strcpy(label1, "EXP CTRL ON");
-                strcpy(label2, "EXP CTRL OFF");
-                bool result = screen.getBinaryInputFromUser(label1, label2, button->ccMessages[pcCcNbr - 1].ctrlByExp);
-                if (result != button->ccMessages[pcCcNbr - 1].ctrlByExp)
-                {
-                    button->ccMessages[pcCcNbr - 1].ctrlByExp = result;
-                    dirty                                     = true;
-                }
+                button->ccMessages[pcCcNbr - 1].ctrlByExp = !button->ccMessages[pcCcNbr - 1].ctrlByExp;
+                dirty                                     = true;
                 break;
             }
             case 8:
@@ -1069,16 +1049,8 @@ bool doPcCcDetailsEdit(Button* button, uint8_t btnNbr, uint8_t pcCcNbr, PcCcEnum
                 {
                     break;
                 }
-                char label1[16];
-                char label2[16];
-                strcpy(label1, " MAX V AS CC");
-                strcpy(label2, " MAX VAL STD");
-                bool result = screen.getBinaryInputFromUser(label1, label2, button->ccMessages[pcCcNbr - 1].useMaxValAsCcNbr);
-                if (result != button->ccMessages[pcCcNbr - 1].useMaxValAsCcNbr)
-                {
-                    button->ccMessages[pcCcNbr - 1].useMaxValAsCcNbr = result;
-                    dirty                                            = true;
-                }
+                button->ccMessages[pcCcNbr - 1].useMaxValAsCcNbr = !button->ccMessages[pcCcNbr - 1].useMaxValAsCcNbr;
+                dirty                                            = true;
                 break;
             }
         }
@@ -1128,6 +1100,22 @@ void initHousekeepingVariables()
     for (size_t i = 0; i < NUMBER_OF_BUTTONS; i++)
     {
         toggleStates[i] = !bank->buttons[i].isPatch && bank->buttons[i].isInitialToggleStateOn; // true: Button is a toggle and initialToggleOn is true
+    }
+}
+
+void togglePushBtnState(uint8_t btnNbr)
+{
+    switch (dataState.btnPushState)
+    {
+        case VERY_FIRST_BTN_PUSH:
+        case FIRST_BTN_PUSH:
+            if (bank->buttons[btnNbr].isSecondPushEnabled)
+                dataState.btnPushState = SECOND_BTN_PUSH;
+            break;
+
+        case SECOND_BTN_PUSH:
+            dataState.btnPushState = FIRST_BTN_PUSH;
+            break;
     }
 }
 
@@ -1202,13 +1190,42 @@ void setButtonLabelAttributes(const Button* button)
 {
     strlcpy(editLabelAttrib[0].label1, "EXIT", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[1].label1, "NAME", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[2].label1, "PATCH", LABEL_1_LENGTH);
+
     strlcpy(editLabelAttrib[3].label1, "PC 1-8", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[4].label1, "PC 9-16", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[5].label1, "2. PUSH", LABEL_1_LENGTH);
+
     strlcpy(editLabelAttrib[6].label1, "CC 1-8", LABEL_1_LENGTH);
     strlcpy(editLabelAttrib[7].label1, "CC 9-16", LABEL_1_LENGTH);
-    strlcpy(editLabelAttrib[8].label1, "TOGL ON", LABEL_1_LENGTH);
+
+    if (button->isPatch)
+    {
+        strlcpy(editLabelAttrib[2].label1, "PATCH", LABEL_1_LENGTH);
+        if (button->isSecondPushEnabled)
+        {
+            strlcpy(editLabelAttrib[5].label1, "2. ON", LABEL_1_LENGTH);
+            if (button->isLatching)
+                strlcpy(editLabelAttrib[8].label1, "LATCH", LABEL_1_LENGTH);
+            else
+                strlcpy(editLabelAttrib[8].label1, "UNLATCH", LABEL_1_LENGTH);
+        }
+        else
+        {
+            strlcpy(editLabelAttrib[5].label1, "2. OFF", LABEL_1_LENGTH);
+            strlcpy(editLabelAttrib[8].label1, " ", LABEL_1_LENGTH);
+        }
+    }
+    else
+    {
+        strlcpy(editLabelAttrib[2].label1, "TOGGLE", LABEL_1_LENGTH);
+        if (button->isInitialToggleStateOn)
+            strlcpy(editLabelAttrib[5].label1, "INIT ON", LABEL_1_LENGTH);
+        else
+            strlcpy(editLabelAttrib[5].label1, "INIT OFF", LABEL_1_LENGTH);
+        if (button->isLatching)
+            strlcpy(editLabelAttrib[8].label1, "LATCH", LABEL_1_LENGTH);
+        else
+            strlcpy(editLabelAttrib[8].label1, "UNLATCH", LABEL_1_LENGTH);
+    }
 
     for (size_t i = 0; i < 9; i++)
     {
@@ -1217,10 +1234,7 @@ void setButtonLabelAttributes(const Button* button)
 
     editLabelAttrib[0].color = 0;
     editLabelAttrib[1].color = 0;
-
-    editLabelAttrib[2].color = TFT_RED;
-    if (button->isPatch)
-        editLabelAttrib[2].color = TFT_GREEN;
+    editLabelAttrib[2].color = 0;
 
     editLabelAttrib[3].color = TFT_RED;
     for (size_t i = 0; i < NUMBER_OF_MIDI_MSG / 2; i++)
@@ -1238,9 +1252,7 @@ void setButtonLabelAttributes(const Button* button)
             break;
         }
 
-    editLabelAttrib[5].color = TFT_RED;
-    if (button->isSecondPushEnabled)
-        editLabelAttrib[5].color = TFT_GREEN;
+    editLabelAttrib[5].color = 0;
 
     editLabelAttrib[6].color = TFT_RED;
     for (size_t i = 0; i < NUMBER_OF_MIDI_MSG / 2; i++)
@@ -1257,10 +1269,7 @@ void setButtonLabelAttributes(const Button* button)
             editLabelAttrib[7].color = TFT_GREEN;
             break;
         }
-
-    editLabelAttrib[8].color = TFT_RED;
-    if (button->isInitialToggleStateOn)
-        editLabelAttrib[8].color = TFT_GREEN;
+    editLabelAttrib[8].color = 0;
 }
 
 void setPc1LabelAttributes(const Button* button)

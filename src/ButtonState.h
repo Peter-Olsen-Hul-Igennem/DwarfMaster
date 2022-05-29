@@ -11,7 +11,8 @@ class ButtonState
 
     bool isBankDownState();
     bool isBankUpState();
-    uint8_t getSingleButtonPressed(bool resetState = false);
+    bool isButtonJustReleased(uint8_t btnNbr);               // Index starts at 1
+    uint8_t getSingleButtonPressed(bool resetState = false); // Index starts at 1
 
  private:
     ButtonState(); // Singleton
@@ -22,11 +23,11 @@ class ButtonState
     static const byte NUMBER_OF_PUSHBUTTONS = 6;
     PushButton* buttons[NUMBER_OF_PUSHBUTTONS];
     uint8_t state;
-    uint64_t lastTime         = 0;
-    const uint8_t STATE_DELAY = 50;
-    const uint8_t FIRST_PIN_NBR       = 33;
-    uint8_t bankChangeButtonPressed   = 0;
-    //uint8_t testState = 0;
+    uint64_t lastTime               = 0;
+    const uint8_t STATE_DELAY       = 50;
+    const uint8_t FIRST_PIN_NBR     = 33;
+    uint8_t bankChangeButtonPressed = 0;
+    uint8_t lastSingleButtonPressed = 0;
 };
 
 #endif

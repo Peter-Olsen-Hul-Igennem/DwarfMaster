@@ -33,7 +33,7 @@ void MidiTransmitter::sendCcMsg(const CcMsg msg, const bool first, const bool ma
         if (maxValAsCc)
             usbMIDI.sendControlChange(msg.maxValue, msg.minValue, msg.channel);
         else
-            usbMIDI.sendControlChange(msg.ccNumber, msg.minValue, msg.channel);
+            usbMIDI.sendControlChange(msg.ccNumber, msg.maxValue, msg.channel);
     }
 }
 

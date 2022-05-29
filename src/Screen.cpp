@@ -88,7 +88,6 @@ void Screen::showMessage(const char* msg)
                     break;
             }
         }
-        Serial.println(i);
         
         memcpy(subString, message, (i) * sizeof(char));
         subString[i] = '\0';
