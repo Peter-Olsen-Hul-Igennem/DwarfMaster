@@ -285,6 +285,8 @@ void bankChange(bool up)
                     drawPlayBtns(false, bBlink);
                     prevMillis = curMillis;
                 }
+                if (usbMIDI.read()) // Recieving any midi data from the Dwarf will signal that the bank is loaded. Tip: The InfamousMindi will send a midi msg on loading! 
+                    break;
             }
 
             sendButtonMidi(bank->buttons[btnNbr1 - 1], dataState.btnPushState);

@@ -38,11 +38,11 @@ void MidiTransmitter::sendCcMsg(const CcMsg msg, const bool first, const bool ma
 }
 
 void MidiTransmitter::sendExpressionMessages(const Bank* bank, const bool* toggleStates, const uint8_t currentSelectedBtn)
-{
-    uint8_t expVal;
-    if (!expHandler->readAndMapValue(&expVal))
+{    
+    uint8_t expVal = expHandler->readAndMapValue();
+    if (-1 == expVal)
         return;
-    
+
     uint8_t mappedValue;
     for (uint8_t i = 0; i < NUMBER_OF_BUTTONS; i++)
     {

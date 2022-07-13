@@ -21,6 +21,16 @@ MidiCtrlData::MidiCtrlData()
         initialize();
         serialize();
     }  
+/*
+    for (int i = 0; i < 100; i++)
+    {
+        for (size_t j = 0; j < 6; j++)
+        {
+            banks[i].buttons[j].isLatching = true;
+        }
+    }
+    serialize();
+*/
 }
 
 Bank* MidiCtrlData::getBank(uint8_t bankNbr)

@@ -1,0 +1,7 @@
+Generate makefile and enable coding with Visual Studio Code:
+
+https://github.com/luni64/VisualTeensy/wiki/Quick-Start-Guide
+
+
+Bootloader: https://koromix.dev/tytools
+Path to "TyCommanderC.exe" is configured in VisualTeensy

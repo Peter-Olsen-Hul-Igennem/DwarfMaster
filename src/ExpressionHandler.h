@@ -7,12 +7,12 @@ class ExpressionHandler
 {
  public:
     ExpressionHandler(const uint8_t expressionPin, const uint16_t minCalibratedValue, const uint16_t maxCalibratedValue);
-    bool readAndMapValue(uint8_t* result);
+    int readAndMapValue();
     uint16_t readCalibrationValue(const bool max);
 
  private:
     const uint8_t POT_THRESHOLD = 4;
-    static const uint8_t HIST_BUFFER_LENGTH = 2;
+    static const uint8_t HIST_BUFFER_LENGTH = 4;
 
     uint8_t exprPin;
     uint16_t minCalibratedVal;
