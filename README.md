@@ -14,4 +14,4 @@ This is my first project using the Arduino/Teensy platform, and the code shows t
 
 The code is developed using VisualTeensy and Visual Studio Code.
 These external libraries are used: ArduinoJson 6.19.4, Adafruit_BusIO 1.11.5, Adafruit_TouchScreen 1.1.3, Adafruit_GFX_Library 1.10.14, MCUFRIEND_kbv 2.9.9 
-These internal libraries are used: EEPROM 2.0, SD 2.0.0, SdFat 2.1.0, SPI 1.0, Wire 1.0
+These internal libraries are used: EEPROM 2.0, SD 2.0.0, SdFat 2.1.0, SPI 1.0, Wire 1.0, MIDI Library 5.0.2
