@@ -1,8 +1,12 @@
 #include "MidiTransmitter.h"
+#include <MIDI.h>
 
+MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
+    
 MidiTransmitter::MidiTransmitter(ExpressionHandler* expressionHandler)
 {
     this->expHandler = expressionHandler;
+    MIDI.begin(MIDI_CHANNEL_OFF);
 }
 
 void MidiTransmitter::sendPcMsg(const PcMsg msg, const bool first)
@@ -11,9 +15,15 @@ void MidiTransmitter::sendPcMsg(const PcMsg msg, const bool first)
         return;
 
     if (first)
+    {
         usbMIDI.sendProgramChange(msg.valueOn, msg.channel);
+        MIDI.sendProgramChange(msg.valueOn, msg.channel);
+    }
     else
+    {
         usbMIDI.sendProgramChange(msg.valueOff, msg.channel);
+        MIDI.sendProgramChange(msg.valueOn, msg.channel);
+    }    
 }
 
 void MidiTransmitter::sendCcMsg(const CcMsg msg, const bool first, const bool maxValAsCc)
@@ -27,13 +37,20 @@ void MidiTransmitter::sendCcMsg(const CcMsg msg, const bool first, const bool ma
     if (first)
     {
         usbMIDI.sendControlChange(msg.ccNumber, msg.minValue, msg.channel);
+        MIDI.sendControlChange(msg.ccNumber, msg.minValue, msg.channel);
     }
     else
     {
         if (maxValAsCc)
+        {
             usbMIDI.sendControlChange(msg.maxValue, msg.minValue, msg.channel);
+            MIDI.sendControlChange(msg.maxValue, msg.minValue, msg.channel);
+        }
         else
+        {
             usbMIDI.sendControlChange(msg.ccNumber, msg.maxValue, msg.channel);
+            MIDI.sendControlChange(msg.ccNumber, msg.maxValue, msg.channel);
+        }
     }
 }
 
@@ -50,39 +67,13 @@ void MidiTransmitter::sendExpressionMessages(const Bank* bank, const bool* toggl
         {
             for (uint8_t j = 0; j < NUMBER_OF_MIDI_MSG; j++)
             {
-                if (bank->buttons[i].ccMessages[j].ctrlByExp)
+                if (bank->buttons[i].ccMessages[j].channel != 0 && bank->buttons[i].ccMessages[j].ctrlByExp) // Midichannel == 0: Disabled. 
                 {
                     mappedValue = map(expVal, 0, 127, bank->buttons[i].ccMessages[j].minValue, bank->buttons[i].ccMessages[j].maxValue);
                     usbMIDI.sendControlChange(bank->buttons[i].ccMessages[j].ccNumber, mappedValue, bank->buttons[i].ccMessages[j].channel);
+                    MIDI.sendControlChange(bank->buttons[i].ccMessages[j].ccNumber, mappedValue, bank->buttons[i].ccMessages[j].channel);
                 }
             }
         }
     }
 }
-/*
-bool MidiTransmitter::readAndMapValue(uint8_t* result)
-{
-    int readValue = analogRead(expPin);
-    
-    if(abs(readValue - prevReadValue) < POT_THRESHOLD) // small potentiometer differences (noise) are disregarded
-        return false;
-    prevReadValue = readValue;
- 
-    uint8_t expVal = map(readValue, 0, 1013, 0, 127);
-    if (expVal == prevExpValue) // if read value is mapped to the same value as the previous one it's disregarded
-        return false;
-
-    prevExpValue = expVal;
-
-    for(uint8_t i=0; i<HIST_BUFFER_LENGTH; i++) // if the mapped value is in the "history buffer" it's disregarded, this "smoothes" the action of the pedal.
-    {
-        if(histBuffer[i] == expVal)
-            return false;
-    }
-    memcpy(&histBuffer[0], &histBuffer[1], sizeof(uint8_t) * (HIST_BUFFER_LENGTH - 1)); // moving the content of the buffer one element back
-    histBuffer[HIST_BUFFER_LENGTH - 1] = expVal;
-
-    *result = expVal;
-
-    return true;
-}*/

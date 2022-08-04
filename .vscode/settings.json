@@ -17,6 +17,7 @@
     "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/SPI'",
     "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/Wire'",
     "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/Wire/utility'",
+    "-I'C:/Users/peter/Documents/GitHub/DwarfMaster/lib/MIDI/src'",
     "-D__IMXRT1062__ -DTEENSYDUINO=156",
     "-DF_CPU=600000000",
     "-DUSB_MIDI",

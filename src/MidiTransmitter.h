@@ -5,6 +5,7 @@
 #include "ExpressionHandler.h"
 #include <Arduino.h>
 
+
 class MidiTransmitter
 {
  public:
@@ -15,16 +16,6 @@ class MidiTransmitter
 
  private:
     ExpressionHandler* expHandler;
- /*
-    bool readAndMapValue(uint8_t* result);
-    
-    const uint8_t POT_THRESHOLD = 4;
-    static const uint8_t HIST_BUFFER_LENGTH = 4;
-
-    uint8_t histBuffer[HIST_BUFFER_LENGTH];
-    int prevReadValue = 0;
-    uint8_t prevExpValue  = 128;
-    */
 };
 
 #endif

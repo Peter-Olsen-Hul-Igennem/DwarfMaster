@@ -25,7 +25,8 @@
         "SD",
         "SdFat",
         "SPI",
-        "Wire"
+        "Wire",
+        "MIDI"
       ],
       "board": {
         "name": "Teensy 4.1",

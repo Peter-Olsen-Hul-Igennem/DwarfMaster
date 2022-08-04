@@ -379,6 +379,7 @@ void sendButtonMidi(Button button, BtnPushState btnState)
     }
 }
 
+
 /*
  * EDIT functions starts here
  */
