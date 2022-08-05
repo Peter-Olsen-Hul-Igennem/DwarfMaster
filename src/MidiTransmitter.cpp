@@ -22,7 +22,7 @@ void MidiTransmitter::sendPcMsg(const PcMsg msg, const bool first)
     else
     {
         usbMIDI.sendProgramChange(msg.valueOff, msg.channel);
-        MIDI.sendProgramChange(msg.valueOn, msg.channel);
+        MIDI.sendProgramChange(msg.valueOff, msg.channel);
     }    
 }
 
