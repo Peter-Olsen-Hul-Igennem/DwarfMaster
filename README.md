@@ -14,3 +14,12 @@ This is my first project using the Arduino/Teensy platform, and the code shows t
 
 The code is developed using VisualTeensy and Visual Studio Code.
 These libraries are used: ArduinoJson 6.19.4, Adafruit_BusIO 1.11.5, Adafruit_TouchScreen 1.1.3, Adafruit_GFX_Library 1.10.14, MCUFRIEND_kbv 2.9.9, EEPROM 2.0, SD 2.0.0, SdFat 2.1.0, SPI 1.0, Wire 1.0, MIDI Library 5.0.2
+
+The controller has 6 footswitches that can be set up as a "preset" of "toggle" button. The preset footswitches are mutually exclusive. Pressing a footswitch can trigger up to 16 PC and 16 CC messages being send. Preset footswitches can be configured to have a secondary press function that can send another 16 PC and 16 CC massages.
+
+The six footswitches constitute a Bank. There are 100 banks. A PC message can be send on changing to a new bank (to load a pedalboard in the Dwarf). Bank up and down is done with pressing footswitch 1+2 (down) and 2+3 (up).
+
+All configuration of footswitches and banks (names, pc's, cc's, preset/toggle, 2. function) is done via the touchscreen with footswitch 3 as "ok" button and footswitch 1 as "cancel/exit".
+There is utility functions for copying banks and footswitches as well as sending a single CC (for midi-learn purpose).
+
+All midi messages is send on both the USB port as well as a standard 5 pin midi connector.
