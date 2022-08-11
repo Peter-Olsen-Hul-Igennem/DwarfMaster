@@ -1,5 +1,5 @@
 # DwarfMaster
-12-05-2022
+11-08-2022
 
 Midi controller for Mod Devices Dwarf
 
@@ -13,5 +13,4 @@ This is not ment to be a community project as the controller is tailored to my s
 This is my first project using the Arduino/Teensy platform, and the code shows that I'm learning as I go - so quite a few "hacks" and inconsistencies can be found.
 
 The code is developed using VisualTeensy and Visual Studio Code.
-These external libraries are used: ArduinoJson 6.19.4, Adafruit_BusIO 1.11.5, Adafruit_TouchScreen 1.1.3, Adafruit_GFX_Library 1.10.14, MCUFRIEND_kbv 2.9.9 
-These internal libraries are used: EEPROM 2.0, SD 2.0.0, SdFat 2.1.0, SPI 1.0, Wire 1.0, MIDI Library 5.0.2
+These libraries are used: ArduinoJson 6.19.4, Adafruit_BusIO 1.11.5, Adafruit_TouchScreen 1.1.3, Adafruit_GFX_Library 1.10.14, MCUFRIEND_kbv 2.9.9, EEPROM 2.0, SD 2.0.0, SdFat 2.1.0, SPI 1.0, Wire 1.0, MIDI Library 5.0.2
