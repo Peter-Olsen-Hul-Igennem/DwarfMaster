@@ -1,0 +1,3 @@
+Teensy 4.1	: https://www.conradelektronik.dk/p/pjrc-mikrocontroller-teensy-41-2269230
+Display		: https://www.conradelektronik.dk/p/tru-components-touchscreen-monitor-71-cm-28-tommer-320-x-240-pixel-inkl-touchpen-2144984
+Buttons		: https://www.banzaimusic.com/Momentary-Soft-Touch-SPST-NO-Long.html
