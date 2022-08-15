@@ -22,4 +22,4 @@ The six footswitches constitute a Bank. There are 100 banks. A PC message can be
 All configuration of footswitches and banks (names, pc's, cc's, preset/toggle, 2. function) is done via the touchscreen with footswitch 3 as "ok" button and footswitch 1 as "cancel/exit".
 There is utility functions for copying banks and footswitches as well as sending a single CC (for midi-learn purpose).
 
-All midi messages is send on both the USB port as well as a standard 5 pin midi connector.
+All midi messages are send on both the USB port as well as a standard 5 pin midi connector.
